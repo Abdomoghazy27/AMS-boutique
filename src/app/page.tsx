@@ -172,8 +172,8 @@ export default function Home() {
          newItems = prev.filter(id => id !== item.id);
          console.log(`[Page Handler - ToggleRecs] Item ${item.id} removed. New input list:`, newItems);
          toast({
-            title: 'Item Removed from Consideration',
-            description: `${item.name} removed from outfit recommendations.`,
+            title: 'Stopped Considering Item',
+            description: `${item.name} removed from outfit recommendations consideration.`,
             variant: 'default', // Use default or a custom style
           });
        } else {
@@ -182,7 +182,7 @@ export default function Home() {
          console.log(`[Page Handler - ToggleRecs] Item ${item.id} added. New input list:`, newItems);
           toast({
              title: 'Considering Item',
-             description: `${item.name} added for outfit recommendations.`,
+             description: `${item.name} added for outfit recommendations. AI suggestions will update shortly.`,
            });
        }
        return newItems;
@@ -233,15 +233,15 @@ export default function Home() {
         recommendationInputItemIds={recommendationInputItems}
        />
 
-      {/* Pass handleToggleOutfitRecs specifically for adding items for AI recs */}
+      {/* Pass handleToggleOutfitRecs and the list of input IDs */}
       <OutfitRecommendations
         recommendations={recommendations}
         clothingData={allClothingItems} // Pass all items for lookup
         isLoading={isLoadingRecommendations}
-         // Pass toggle handler to recommendation cards as well, if needed
-        onToggleForRecommendations={handleToggleOutfitRecs}
-        recommendationInputItemIds={recommendationInputItems}
+        onToggleForRecommendations={handleToggleOutfitRecs} // Pass toggle handler
+        recommendationInputItemIds={recommendationInputItems} // Pass the list of IDs being considered
       />
     </div>
   );
 }
+
