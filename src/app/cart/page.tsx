@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCart } from '@/contexts/cart-context';
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import Image from 'next/image';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
-import { Trash2, ShoppingBag } from 'lucide-react';
+import { Trash2, ShoppingBag, CreditCard } from 'lucide-react'; // Added CreditCard icon
 
 export default function CartPage() {
   const { cartItems, removeItem, updateQuantity, clearCart, getCartTotal, getItemCount } = useCart();
@@ -104,7 +105,12 @@ export default function CartPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-2">
-              <Button className="w-full" size="lg">Proceed to Checkout</Button>
+              {/* Updated Button to link to /checkout */}
+              <Button className="w-full" size="lg" asChild>
+                 <Link href="/checkout">
+                  <CreditCard className="mr-2 h-4 w-4" /> Proceed to Checkout
+                </Link>
+              </Button>
                <Button variant="outline" className="w-full" asChild>
                     <Link href="/">Continue Shopping</Link>
                </Button>
