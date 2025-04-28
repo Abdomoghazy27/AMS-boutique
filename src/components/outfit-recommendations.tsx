@@ -1,3 +1,4 @@
+
 import type { ClothingItem } from '@/services/clothing';
 import type { RecommendOutfitOutput } from '@/ai/flows/outfit-recommendation';
 import { ClothingItemCard } from '@/components/clothing-item-card';
@@ -15,7 +16,10 @@ interface OutfitRecommendationsProps {
 }
 
 export function OutfitRecommendations({ recommendations, clothingData, isLoading = false, onToggleForRecommendations, recommendationInputItemIds }: OutfitRecommendationsProps) {
+   console.log("[OutfitRecommendations Render] Props received:", { isLoading, recommendations: recommendations ? recommendations.recommendations.length : null, clothingDataCount: clothingData.length, inputItemIds: recommendationInputItemIds });
+
    if (isLoading) {
+    console.log("[OutfitRecommendations Render] Rendering loading state.");
     return (
       <Card className="mt-8 shadow-md">
         <CardHeader>
@@ -51,6 +55,7 @@ export function OutfitRecommendations({ recommendations, clothingData, isLoading
 
   // Show placeholder only if NOT loading AND (no recommendations OR empty recommendations array)
    if (!isLoading && (!recommendations || !recommendations.recommendations || recommendations.recommendations.length === 0)) {
+    console.log("[OutfitRecommendations Render] Rendering placeholder state (no recommendations or empty array).");
     return (
        <Card className="mt-8 shadow-md bg-secondary/50">
         <CardHeader>
@@ -68,6 +73,7 @@ export function OutfitRecommendations({ recommendations, clothingData, isLoading
   }
 
   // Handle case where recommendation IDs don't match clothing data (after loading is done)
+   console.log("[OutfitRecommendations Render] Processing recommendations to find matching items...");
    const recommendedItems = recommendations!.recommendations // We know recommendations is not null/empty here
     .map(rec => {
       const item = clothingData.find(c => c.id === rec.clothingItemId);
@@ -78,9 +84,12 @@ export function OutfitRecommendations({ recommendations, clothingData, isLoading
     })
     .filter(rec => rec !== null) as { clothingItemId: string; reason: string; itemData: ClothingItem }[];
 
+  console.log(`[OutfitRecommendations Render] Found ${recommendedItems.length} matching items for the recommendations.`);
+
 
   if (recommendedItems.length === 0) {
      // This case handles if the AI returned IDs, but none matched our local data
+     console.log("[OutfitRecommendations Render] No matching items found for the recommendation IDs. Rendering 'not found' message.");
      return (
        <Card className="mt-8 shadow-md bg-secondary/50">
         <CardHeader>
@@ -95,6 +104,7 @@ export function OutfitRecommendations({ recommendations, clothingData, isLoading
      );
    }
 
+  console.log("[OutfitRecommendations Render] Rendering recommendation cards.");
   return (
     <Card className="mt-8 shadow-md">
       <CardHeader>
