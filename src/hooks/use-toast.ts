@@ -135,9 +135,13 @@ let memoryState: State = { toasts: [] }
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
-    listener(memoryState)
-  })
+  // Schedule listener updates asynchronously using queueMicrotask
+  // to prevent updates during the render phase of another component.
+  queueMicrotask(() => {
+    listeners.forEach((listener) => {
+      listener(memoryState)
+    })
+  });
 }
 
 type Toast = Omit<ToasterToast, "id">
