@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -85,20 +86,26 @@ export default function Home() {
       return;
     }
 
+    // Ensure allClothingItems is loaded before proceeding
+    if (allClothingItems.length === 0) {
+        console.log("[Page Effect] Waiting for all clothing items to load before getting recommendations.");
+        return;
+    }
+
     const getRecommendations = async () => {
       setIsLoadingRecommendations(true);
       try {
-         // Extract all available item IDs from the fetched data
+         // Pass the *full* list of available item IDs. Filtering happens in the AI flow/tool.
          const allAvailableItemIds = allClothingItems.map(item => item.id);
 
         const input: RecommendOutfitInput = {
           selectedItems: recommendationInputItems,
-          availableItemIds: allAvailableItemIds, // Pass all available IDs
+          availableItemIds: allAvailableItemIds, // Pass the full list of IDs
           // Potentially add stylePreferences or previouslyViewedItems (from state/context)
         };
-        console.log("Requesting recommendations with:", input);
+        console.log("[Page Effect] Requesting recommendations with:", input);
         const result = await recommendOutfit(input);
-         console.log("Received recommendations:", result);
+         console.log("[Page Effect] Received recommendations:", result);
         setRecommendations(result);
       } catch (error) {
         console.error("Error getting recommendations:", error);
@@ -200,3 +207,4 @@ export default function Home() {
     </div>
   );
 }
+
