@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
+import { CartProvider } from '@/contexts/cart-context'; // Import CartProvider
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Toaster />
+        <CartProvider> {/* Wrap with CartProvider */}
+          <Header />
+          <main className="flex-1 pt-4 pb-16">{children}</main> {/* Add padding bottom */}
+          <Toaster />
+        </CartProvider>
       </body>
     </html>
   );

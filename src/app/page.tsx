@@ -7,142 +7,82 @@ import { ClothingList } from '@/components/clothing-list';
 import { FilterOptions } from '@/components/filter-options';
 import { OutfitRecommendations } from '@/components/outfit-recommendations';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
-// Dummy data for demonstration
-const dummyItems: ClothingItem[] = [
-  {
-    id: '1',
-    name: 'Classic White Tee',
-    description: 'A versatile and comfortable cotton t-shirt.',
-    imageUrl: 'https://picsum.photos/seed/tee/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['White', 'Black', 'Gray'],
-    category: 'T-Shirts',
-  },
-  {
-    id: '2',
-    name: 'Slim Fit Jeans',
-    description: 'Stylish dark wash slim fit jeans.',
-    imageUrl: 'https://picsum.photos/seed/jeans/400/300',
-    sizes: ['28', '30', '32', '34', '36'],
-    colors: ['Dark Wash', 'Light Wash', 'Black'],
-    category: 'Jeans',
-  },
-  {
-    id: '3',
-    name: 'Floral Sundress',
-    description: 'Light and airy floral print sundress, perfect for summer.',
-    imageUrl: 'https://picsum.photos/seed/dress/400/300',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: ['Pink Floral', 'Blue Floral', 'Yellow Floral'],
-    category: 'Dresses',
-  },
-  {
-    id: '4',
-    name: 'Cozy Knit Sweater',
-    description: 'Warm and soft knit sweater for cooler days.',
-    imageUrl: 'https://picsum.photos/seed/sweater/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Cream', 'Navy', 'Burgundy'],
-    category: 'Sweaters',
-  },
-   {
-    id: '5',
-    name: 'Casual Chinos',
-    description: 'Comfortable and stylish chinos for everyday wear.',
-    imageUrl: 'https://picsum.photos/seed/chinos/400/300',
-    sizes: ['30', '32', '34', '36'],
-    colors: ['Khaki', 'Olive', 'Gray'],
-    category: 'Pants',
-  },
-  {
-    id: '6',
-    name: 'Leather Jacket',
-    description: 'Classic biker style leather jacket.',
-    imageUrl: 'https://picsum.photos/seed/jacket/400/300',
-    sizes: ['S', 'M', 'L'],
-    colors: ['Black', 'Brown'],
-    category: 'Outerwear',
-  },
-   {
-    id: '7',
-    name: 'Striped Button-Down Shirt',
-    description: 'A sharp striped shirt for smart-casual looks.',
-    imageUrl: 'https://picsum.photos/seed/shirt/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Blue/White Stripe', 'Gray/White Stripe'],
-    category: 'Shirts',
-  },
-  {
-    id: '8',
-    name: 'Denim Skirt',
-    description: 'A versatile denim mini skirt.',
-    imageUrl: 'https://picsum.photos/seed/skirt/400/300',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: ['Blue Denim', 'Black Denim'],
-    category: 'Skirts',
-  }
-];
-
+// Removed dummy data as it's now in services/clothing.ts
 
 export default function Home() {
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ClothingItem[]>([]);
   const [filters, setFilters] = useState<{ category?: string; size?: string; color?: string }>({});
-  const [selectedOutfitItems, setSelectedOutfitItems] = useState<string[]>([]);
+  // State for items specifically selected for outfit recommendations (distinct from cart)
+  const [recommendationInputItems, setRecommendationInputItems] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<RecommendOutfitOutput | null>(null);
   const [isLoadingItems, setIsLoadingItems] = useState(true);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const { toast } = useToast();
 
 
-  // Fetch initial data (using dummy data for now)
+  // Fetch initial data
   useEffect(() => {
     const fetchItems = async () => {
       setIsLoadingItems(true);
-      // Replace with actual API call if available
-      // const items = await getClothingItems();
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-      setAllClothingItems(dummyItems);
-      setFilteredItems(dummyItems); // Initially display all items
-      setIsLoadingItems(false);
-      setIsInitialLoad(false);
+      try {
+        // In a real app, filters could be passed here if needed initially
+        const items = await getClothingItems();
+        setAllClothingItems(items);
+        setFilteredItems(items); // Initially display all items
+      } catch (error) {
+          console.error("Failed to fetch clothing items:", error);
+          toast({
+            title: "Error",
+            description: "Could not load clothing items. Please try refreshing.",
+            variant: "destructive",
+          });
+           setAllClothingItems([]); // Set to empty on error
+           setFilteredItems([]);
+      } finally {
+          setIsLoadingItems(false);
+          setIsInitialLoad(false);
+      }
     };
     fetchItems();
-  }, []);
+  }, [toast]); // Add toast to dependency array
 
   // Filter items whenever filters or allClothingItems change
   useEffect(() => {
     if (isInitialLoad) return; // Don't filter until initial data is loaded
 
     setIsLoadingItems(true);
-    let itemsToFilter = [...allClothingItems];
-
-    if (filters.category) {
-      itemsToFilter = itemsToFilter.filter(item => item.category === filters.category);
-    }
-    if (filters.size) {
-      itemsToFilter = itemsToFilter.filter(item => item.sizes.includes(filters.size!));
-    }
-    if (filters.color) {
-      itemsToFilter = itemsToFilter.filter(item => item.colors.includes(filters.color!));
-    }
-
-    // Simulate filtering delay
-    const timer = setTimeout(() => {
-       setFilteredItems(itemsToFilter);
-       setIsLoadingItems(false);
-    }, 500);
+    // Simulate filtering delay for UX feedback
+    const timer = setTimeout(async () => {
+       try {
+           const items = await getClothingItems(filters.category, filters.size, filters.color);
+           setFilteredItems(items);
+       } catch (error) {
+            console.error("Failed to filter clothing items:", error);
+             toast({
+               title: "Error",
+               description: "Could not apply filters. Please try again.",
+               variant: "destructive",
+             });
+             // Optionally reset filters or keep previous results
+             // setFilteredItems(allClothingItems);
+       } finally {
+          setIsLoadingItems(false);
+       }
+    }, 300); // Debounce filtering slightly
 
     return () => clearTimeout(timer); // Cleanup timer on unmount or filter change
 
-  }, [filters, allClothingItems, isInitialLoad]);
+  }, [filters, allClothingItems, isInitialLoad, toast]); // Add toast to dependency array
 
 
-  // Get outfit recommendations when selected items change
+  // Get outfit recommendations when recommendationInputItems change
   useEffect(() => {
-    if (selectedOutfitItems.length === 0) {
-      setRecommendations(null); // Clear recommendations if no items are selected
+    if (recommendationInputItems.length === 0) {
+      setRecommendations(null); // Clear recommendations if no items are selected for it
       return;
     }
 
@@ -150,52 +90,58 @@ export default function Home() {
       setIsLoadingRecommendations(true);
       try {
         const input: RecommendOutfitInput = {
-          selectedItems: selectedOutfitItems,
-          // Add stylePreferences or previouslyViewedItems if needed
+          selectedItems: recommendationInputItems,
+          // Potentially add stylePreferences or previouslyViewedItems (from state/context)
         };
+        console.log("Requesting recommendations with:", input);
         const result = await recommendOutfit(input);
+         console.log("Received recommendations:", result);
         setRecommendations(result);
       } catch (error) {
         console.error("Error getting recommendations:", error);
-        // Handle error appropriately, e.g., show a toast message
+         toast({
+           title: 'Recommendation Error',
+           description: 'Could not fetch outfit recommendations.',
+           variant: 'destructive',
+         });
         setRecommendations(null); // Clear recommendations on error
       } finally {
         setIsLoadingRecommendations(false);
       }
     };
 
-    // Debounce the recommendation call slightly
-    const debounceTimer = setTimeout(() => {
-        getRecommendations();
-    }, 300); // Wait 300ms after the last item addition
-
+    // Debounce the recommendation call
+    const debounceTimer = setTimeout(getRecommendations, 500); // Wait 500ms
 
      return () => clearTimeout(debounceTimer);
-  }, [selectedOutfitItems]);
+  }, [recommendationInputItems, toast]); // Add toast
 
 
   const handleFilterChange = useCallback((newFilters: { category?: string; size?: string; color?: string }) => {
     setFilters(newFilters);
   }, []);
 
-  const handleAddToOutfit = useCallback((item: ClothingItem, size: string, color: string) => {
-    // Use item.id to track selected items for recommendations
-    setSelectedOutfitItems(prev => {
-      // Avoid adding duplicates
-      if (prev.includes(item.id)) {
-        return prev;
-      }
-      return [...prev, item.id];
-    });
-    // Here you could also add the item with size/color to a visual "outfit builder" state if needed
-  }, []);
+   // Handler specifically for adding items to trigger AI recommendations
+   const handleAddToOutfitRecs = useCallback((item: ClothingItem) => {
+     setRecommendationInputItems(prev => {
+       // Avoid adding duplicates
+       if (prev.includes(item.id)) {
+         return prev;
+       }
+        toast({ // Give feedback that item is added for recs
+           title: 'Considering Item',
+           description: `${item.name} added for outfit recommendations.`,
+         });
+       return [...prev, item.id];
+     });
+   }, [toast]);
 
 
   // Memoize filter options to avoid recalculating on every render
   const filterOptions = useMemo(() => {
-    const categories = [...new Set(allClothingItems.map(item => item.category))];
-    const sizes = [...new Set(allClothingItems.flatMap(item => item.sizes))];
-    const colors = [...new Set(allClothingItems.flatMap(item => item.colors))];
+    const categories = [...new Set(allClothingItems.map(item => item.category))].sort();
+    const sizes = [...new Set(allClothingItems.flatMap(item => item.sizes))].sort();
+    const colors = [...new Set(allClothingItems.flatMap(item => item.colors))].sort();
     return { categories, sizes, colors };
   }, [allClothingItems]);
 
@@ -211,7 +157,7 @@ export default function Home() {
               <div className="h-10 bg-muted-foreground/20 rounded"></div> {/* Select placeholders */}
               <div className="h-10 bg-muted-foreground/20 rounded"></div>
               <div className="h-10 bg-muted-foreground/20 rounded"></div>
-              <div className="h-10 bg-muted-foreground/40 rounded md:col-span-3"></div> {/* Button placeholder */}
+              <div className="h-10 bg-primary/40 rounded md:col-span-3"></div> {/* Button placeholder */}
             </div>
           </div>
       ) : (
@@ -224,20 +170,19 @@ export default function Home() {
           />
       )}
 
-
+      {/* ClothingList no longer needs onAddToOutfit prop */}
       <ClothingList
         items={filteredItems}
-        onAddToOutfit={handleAddToOutfit}
         isLoading={isLoadingItems}
        />
 
+      {/* Pass handleAddToOutfitRecs specifically for adding items for AI recs */}
       <OutfitRecommendations
         recommendations={recommendations}
-        clothingData={allClothingItems} // Pass all items for lookup
-        onAddToOutfit={handleAddToOutfit}
+        clothingData={allClothingItems}
+        onConsiderForRecommendations={handleAddToOutfitRecs} // New prop name for clarity
         isLoading={isLoadingRecommendations}
       />
     </div>
   );
 }
-

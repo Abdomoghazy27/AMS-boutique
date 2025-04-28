@@ -31,9 +31,13 @@ export interface ClothingItem {
    * The category of the clothing item.
    */
   category: string;
+  /**
+   * The price of the clothing item.
+   */
+  price: number;
 }
 
-// More extensive dummy data
+// More extensive dummy data with prices
 const dummyItems: ClothingItem[] = [
   {
     id: '1',
@@ -43,6 +47,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['White', 'Black', 'Gray'],
     category: 'T-Shirts',
+    price: 25.00,
   },
   {
     id: '2',
@@ -52,6 +57,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['28', '30', '32', '34', '36'],
     colors: ['Dark Wash', 'Light Wash', 'Black'],
     category: 'Jeans',
+    price: 75.50,
   },
   {
     id: '3',
@@ -61,6 +67,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['XS', 'S', 'M', 'L'],
     colors: ['Pink Floral', 'Blue Floral', 'Yellow Floral'],
     category: 'Dresses',
+    price: 89.99,
   },
   {
     id: '4',
@@ -70,6 +77,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Cream', 'Navy', 'Burgundy'],
     category: 'Sweaters',
+    price: 65.00,
   },
    {
     id: '5',
@@ -79,6 +87,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['30', '32', '34', '36'],
     colors: ['Khaki', 'Olive', 'Gray'],
     category: 'Pants',
+    price: 55.00,
   },
   {
     id: '6',
@@ -88,6 +97,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L'],
     colors: ['Black', 'Brown'],
     category: 'Outerwear',
+    price: 199.99,
   },
    {
     id: '7',
@@ -97,6 +107,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Blue/White Stripe', 'Gray/White Stripe'],
     category: 'Shirts',
+    price: 49.50,
   },
   {
     id: '8',
@@ -106,6 +117,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['XS', 'S', 'M', 'L'],
     colors: ['Blue Denim', 'Black Denim'],
     category: 'Skirts',
+    price: 45.00,
   },
    {
     id: '9',
@@ -115,6 +127,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: ['Black', 'Heather Gray', 'Navy'],
     category: 'Sweaters', // Or could be Outerwear depending on classification
+    price: 68.00,
   },
    {
     id: '10',
@@ -124,6 +137,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L'],
     colors: ['Emerald Green', 'Deep Red', 'Navy Blue'],
     category: 'Dresses',
+    price: 120.00,
   },
    {
     id: '11',
@@ -133,6 +147,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Olive Green', 'Black', 'Maroon'],
     category: 'Outerwear',
+    price: 95.00,
   },
    {
     id: '12',
@@ -142,6 +157,7 @@ const dummyItems: ClothingItem[] = [
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['White', 'Navy', 'Red', 'Green'],
     category: 'Shirts',
+    price: 39.95,
   }
 ];
 
