@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/cart-context'; // Import useCart
-import { ShoppingCart, Wand2, MinusCircle, PlusCircle } from 'lucide-react'; // Import icons
+import { ShoppingCart, Wand2, MinusCircle, PlusCircle, CheckCircle } from 'lucide-react'; // Import icons
 
 
 interface ClothingItemCardProps {
