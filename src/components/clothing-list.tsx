@@ -3,11 +3,14 @@ import { ClothingItemCard } from '@/components/clothing-item-card';
 
 interface ClothingListProps {
   items: ClothingItem[];
-  // Removed onAddToOutfit prop as it's now handled by CartContext via Card
   isLoading?: boolean;
+  // Handler to toggle an item's inclusion in the recommendation input
+  onToggleForRecommendations: (item: ClothingItem) => void;
+  // IDs of items currently selected for recommendations (to update card state)
+  recommendationInputItemIds: string[];
 }
 
-export function ClothingList({ items, isLoading = false }: ClothingListProps) {
+export function ClothingList({ items, isLoading = false, onToggleForRecommendations, recommendationInputItemIds }: ClothingListProps) {
 
    if (isLoading) {
     // Display skeletons while loading
@@ -25,7 +28,11 @@ export function ClothingList({ items, isLoading = false }: ClothingListProps) {
                  <div className="h-10 bg-muted rounded w-1/2"></div>
                  <div className="h-10 bg-muted rounded w-1/2"></div>
                </div>
-             <div className="h-10 bg-muted rounded w-full mt-2"></div> {/* Button Placeholder */}
+               <div className="flex justify-between items-center mt-2"> {/* Buttons Placeholder */}
+                <div className="h-10 bg-muted rounded w-2/5"></div> {/* Add to Cart */}
+                <div className="h-8 bg-muted rounded w-2/5"></div> {/* Consider for Recs */}
+              </div>
+
           </div>
         ))}
       </div>
@@ -40,8 +47,14 @@ export function ClothingList({ items, isLoading = false }: ClothingListProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {items.map((item) => (
-        // Pass only item, cart logic is internal to the card now
-        <ClothingItemCard key={item.id} item={item} />
+        <ClothingItemCard
+          key={item.id}
+          item={item}
+          // Pass the toggle handler down to the card
+          onToggleForRecommendations={onToggleForRecommendations}
+          // Let the card know if it's currently selected for recommendations
+          isSelectedForRecommendations={recommendationInputItemIds.includes(item.id)}
+        />
       ))}
     </div>
   );

@@ -9,8 +9,6 @@ import { OutfitRecommendations } from '@/components/outfit-recommendations';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from '@/hooks/use-toast'; // Import useToast
 
-// Removed dummy data as it's now in services/clothing.ts
-
 export default function Home() {
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ClothingItem[]>([]);
@@ -83,14 +81,19 @@ export default function Home() {
   useEffect(() => {
     if (recommendationInputItems.length === 0) {
       setRecommendations(null); // Clear recommendations if no items are selected for it
+      setIsLoadingRecommendations(false); // Ensure loading stops if selection is cleared
       return;
     }
 
     const getRecommendations = async () => {
       setIsLoadingRecommendations(true);
       try {
+         // Extract all available item IDs from the fetched data
+         const allAvailableItemIds = allClothingItems.map(item => item.id);
+
         const input: RecommendOutfitInput = {
           selectedItems: recommendationInputItems,
+          availableItemIds: allAvailableItemIds, // Pass all available IDs
           // Potentially add stylePreferences or previouslyViewedItems (from state/context)
         };
         console.log("Requesting recommendations with:", input);
@@ -114,25 +117,32 @@ export default function Home() {
     const debounceTimer = setTimeout(getRecommendations, 500); // Wait 500ms
 
      return () => clearTimeout(debounceTimer);
-  }, [recommendationInputItems, toast]); // Add toast
+  }, [recommendationInputItems, allClothingItems, toast]); // Add allClothingItems dependency
 
 
   const handleFilterChange = useCallback((newFilters: { category?: string; size?: string; color?: string }) => {
     setFilters(newFilters);
   }, []);
 
-   // Handler specifically for adding items to trigger AI recommendations
-   const handleAddToOutfitRecs = useCallback((item: ClothingItem) => {
+   // Handler specifically for adding/removing items to trigger AI recommendations
+   const handleToggleOutfitRecs = useCallback((item: ClothingItem) => {
      setRecommendationInputItems(prev => {
-       // Avoid adding duplicates
        if (prev.includes(item.id)) {
-         return prev;
+         // Remove item
+         toast({
+            title: 'Item Removed from Consideration',
+            description: `${item.name} removed from outfit recommendations.`,
+            variant: 'default', // Use default or a custom style
+          });
+         return prev.filter(id => id !== item.id);
+       } else {
+         // Add item
+          toast({
+             title: 'Considering Item',
+             description: `${item.name} added for outfit recommendations.`,
+           });
+         return [...prev, item.id];
        }
-        toast({ // Give feedback that item is added for recs
-           title: 'Considering Item',
-           description: `${item.name} added for outfit recommendations.`,
-         });
-       return [...prev, item.id];
      });
    }, [toast]);
 
@@ -170,18 +180,22 @@ export default function Home() {
           />
       )}
 
-      {/* ClothingList no longer needs onAddToOutfit prop */}
+      {/* Pass down the toggle handler and the list of IDs being considered */}
       <ClothingList
         items={filteredItems}
         isLoading={isLoadingItems}
+        onToggleForRecommendations={handleToggleOutfitRecs}
+        recommendationInputItemIds={recommendationInputItems}
        />
 
-      {/* Pass handleAddToOutfitRecs specifically for adding items for AI recs */}
+      {/* Pass handleToggleOutfitRecs specifically for adding items for AI recs */}
       <OutfitRecommendations
         recommendations={recommendations}
         clothingData={allClothingItems}
-        onConsiderForRecommendations={handleAddToOutfitRecs} // New prop name for clarity
         isLoading={isLoadingRecommendations}
+         // Pass toggle handler to recommendation cards as well, if needed
+        onToggleForRecommendations={handleToggleOutfitRecs}
+        recommendationInputItemIds={recommendationInputItems}
       />
     </div>
   );
