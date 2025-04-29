@@ -44,81 +44,67 @@ export type RecommendOutfitOutput = z.infer<typeof RecommendOutfitOutputSchema>;
 const assessStyleRulesTool = ai.defineTool({
   name: 'assessStyleRules',
   description:
-    'Analyzes selected clothing items and ALL available inventory items to suggest complementary items based on common style principles (e.g., color coordination, category pairing). Use this tool to get potential recommendations that logically fit with the items the user has already chosen. DO NOT recommend items already present in the `selectedItems` input.',
+    'Analyzes selected clothing items and ALL available inventory items to suggest complementary items based on common style principles (e.g., color coordination, category pairing). Use this tool to get potential recommendations that logically fit with the items the user has already chosen. CRITICAL: DO NOT recommend items already present in the `selectedItems` input.',
   inputSchema: z.object({
     selectedItems: z
       .array(z.string())
       .describe('The IDs of clothing items the user has selected.'),
     availableItemIds: z.array(z.string()).describe('List of ALL available clothing item IDs for potential recommendation.'),
   }),
-  outputSchema: z.array(OutfitRecommendationSchema), // Tool outputs potential recommendations
+  // Tool outputs potential recommendations (up to a reasonable limit, let the main prompt decide the final 3)
+  outputSchema: z.array(OutfitRecommendationSchema).max(5),
 }, async input => {
   console.log("[assessStyleRulesTool] Input:", input);
-
-  // TODO: In a real application, fetch item details (category, color, etc.) for smarter recommendations.
-  // This remains a placeholder implementation generating dummy recommendations based on IDs.
-
   const recommendations: OutfitRecommendation[] = [];
   const selectedSet = new Set(input.selectedItems);
-  // Filter OUT selected items FROM the available items here in the tool logic
-  const potentialRecommendations = input.availableItemIds.filter(id => !selectedSet.has(id));
-  console.log("[assessStyleRulesTool] Potential recommendation candidates (after filtering selected):", potentialRecommendations);
 
-  // Slightly less specific dummy logic
-  // Try to add *some* recommendations based on simple pairings
-  if (input.selectedItems.includes('2') || input.selectedItems.includes('5')) { // Jeans or Chinos selected
-    const topCandidates = ['1', '7', '12']; // Tee, Button-Down, Polo
-    for (const candidateId of topCandidates) {
-      if (recommendations.length >= 3) break;
-      const item = potentialRecommendations.find(id => id === candidateId);
-      if (item) {
-        recommendations.push({ clothingItemId: item, reason: `Pairs well with ${input.selectedItems.includes('2') ? 'jeans' : 'chinos'}.` });
+  // Filter available items to get potential candidates (excluding already selected ones)
+  const potentialItems = input.availableItemIds.filter(id => !selectedSet.has(id));
+  console.log(`[assessStyleRulesTool] Potential candidates (available excluding selected): ${potentialItems.length} items`);
+
+  // --- Placeholder Dummy Logic ---
+  // TODO: Replace with actual logic fetching item details and applying style rules.
+  // This simple logic just picks the first few potential items.
+
+  // Example: Try to find a top if bottoms are selected, or bottoms if top is selected
+  const needsTop = input.selectedItems.some(id => ['2', '5', '8', '19'].includes(id)); // Jeans, Chinos, Skirt, Shorts
+  const needsBottom = input.selectedItems.some(id => ['1', '7', '12', '16', '20'].includes(id)); // Tees, Shirts, Blouse, Cami
+
+  if (needsTop) {
+      const topCandidates = ['1', '7', '12', '16', '20'];
+      for (const candidateId of topCandidates) {
+          if (recommendations.length >= 5) break;
+          if (potentialItems.includes(candidateId)) {
+              recommendations.push({ clothingItemId: candidateId, reason: `Pairs well with your selected bottom.` });
+              potentialItems.splice(potentialItems.indexOf(candidateId), 1); // Remove used item
+          }
       }
-    }
-    const outerwearCandidates = ['6', '11']; // Leather Jacket, Bomber
-     for (const candidateId of outerwearCandidates) {
-       if (recommendations.length >= 3) break;
-       const item = potentialRecommendations.find(id => id === candidateId);
-       if (item) {
-          recommendations.push({ clothingItemId: item, reason: 'Adds a stylish layer.' });
-       }
-     }
   }
 
-   if (input.selectedItems.includes('1') || input.selectedItems.includes('7') || input.selectedItems.includes('12')) { // Top selected
-     const bottomCandidates = ['2', '5', '8']; // Jeans, Chinos, Skirt
-     for (const candidateId of bottomCandidates) {
-        if (recommendations.length >= 3) break;
-        const item = potentialRecommendations.find(id => id === candidateId);
-        if (item) {
-            recommendations.push({ clothingItemId: item, reason: 'Completes the look with your selected top.' });
-        }
-     }
-   }
+  if (needsBottom) {
+       const bottomCandidates = ['2', '5', '8', '14', '19']; // Jeans, Chinos, Skirt, Linen Trousers, Shorts
+       for (const candidateId of bottomCandidates) {
+          if (recommendations.length >= 5) break;
+          if (potentialItems.includes(candidateId)) {
+               recommendations.push({ clothingItemId: candidateId, reason: `Completes the look with your selected top.` });
+               potentialItems.splice(potentialItems.indexOf(candidateId), 1); // Remove used item
+          }
+       }
+  }
 
-   if (input.selectedItems.includes('3') || input.selectedItems.includes('10')) { // Dress selected
-        const outerwearCandidates = ['4', '6', '11']; // Sweater, Leather Jacket, Bomber
-        for (const candidateId of outerwearCandidates) {
-            if (recommendations.length >= 3) break;
-            const item = potentialRecommendations.find(id => id === candidateId);
-            if (item) {
-                recommendations.push({ clothingItemId: item, reason: 'A great layer for the dress.' });
-            }
-        }
-    }
+  // Add generic recommendations if needed, up to 5
+  let potentialIndex = 0;
+  while (recommendations.length < 5 && potentialIndex < potentialItems.length) {
+      recommendations.push({
+          clothingItemId: potentialItems[potentialIndex],
+          reason: `A versatile option (ID: ${potentialItems[potentialIndex]}) to consider.`
+      });
+      potentialIndex++;
+  }
+  // --- End Placeholder Logic ---
 
-   // Add some generic recommendations if needed to reach up to 3 and potential items exist
-   const existingRecIds = new Set(recommendations.map(r => r.clothingItemId));
-   const remainingPotential = potentialRecommendations.filter(id => !existingRecIds.has(id));
-   let count = 0;
-   while (recommendations.length < 3 && count < remainingPotential.length) {
-       const randomItemId = remainingPotential[count];
-       recommendations.push({ clothingItemId: randomItemId, reason: 'Expands your outfit possibilities.' });
-       count++;
-   }
-
-  console.log(`[assessStyleRulesTool] Generated ${recommendations.length} Recommendations (max 3):`, recommendations);
-  return recommendations; // Return up to 3 recommendations (output schema handles max)
+  console.log(`[assessStyleRulesTool] Generated ${recommendations.length} Raw Recommendations (max 5):`, recommendations);
+  return recommendations; // Return up to 5 recommendations for the LLM to choose from
 });
 
 // Define the main prompt using the tool
@@ -128,13 +114,13 @@ const recommendOutfitPrompt = ai.definePrompt({
     system: `You are a helpful fashion assistant and stylist for AMS Boutique. Your goal is to recommend up to 3 clothing items that complement the items the user has already selected.
 - Analyze the user's selected items (IDs provided).
 - Consider their optional style preferences and previously viewed items for hints.
-- Use the 'assessStyleRulesTool' to get initial suggestions based on style rules and the *entire* available inventory. The tool provides item IDs and preliminary reasons.
-- Refine the reasons provided by the tool to be more engaging and descriptive for the user.
-- Ensure the final output contains exactly the requested fields in the specified JSON format.
-- ONLY recommend items that are present in the 'availableItemIds' list provided in the user prompt.
-- CRITICAL: DO NOT recommend items that are already listed in the user's 'selectedItems'. Ensure the 'assessStyleRulesTool' is used correctly to avoid this.
-- Prioritize recommendations that create a cohesive outfit.
-- If the tool returns fewer than 3 items, do not invent new ones. Only return what the tool provided.`,
+- Use the 'assessStyleRulesTool' to get initial suggestions based on style rules and the *entire* available inventory. The tool provides item IDs and preliminary reasons based on basic pairing.
+- From the tool's suggestions, select the BEST recommendations (up to 3) that create a cohesive and stylish outfit. Prioritize items that directly complement the selected items.
+- Refine the reasons provided by the tool to be more engaging, specific, and descriptive for the user. Explain *why* it complements the look (e.g., color contrast, style match, layering possibility).
+- Ensure the final output contains exactly the requested fields in the specified JSON format, with a maximum of 3 recommendations.
+- ONLY recommend items that were suggested by the 'assessStyleRulesTool' AND are present in the 'availableItemIds' list provided in the user prompt.
+- CRITICAL: DO NOT recommend items that are already listed in the user's 'selectedItems'. Ensure the 'assessStyleRulesTool' is used correctly to avoid this, and double-check the tool's output.
+- If the tool returns fewer than 3 items, only recommend those provided by the tool. Do not invent new ones.`,
     // Tools available to the model
     tools: [assessStyleRulesTool],
     // Input schema for the prompt
@@ -153,7 +139,7 @@ Available Item IDs for recommendation: {{#each availableItemIds}} {{this}}{{#unl
 {{#if stylePreferences}}Style Preference: {{{stylePreferences}}}{{/if}}
 {{#if previouslyViewedItems}}Previously Viewed IDs: {{#each previouslyViewedItems}} {{this}}{{#unless @last}},{{/unless}}{{/each}}{{/if}}
 
-Use the assessStyleRulesTool to help generate appropriate recommendations. Ensure recommendations are from the available IDs AND are NOT already in my selected items. Provide clear reasons for each suggestion.`,
+Use the assessStyleRulesTool to get a list of potential complementary items from the available inventory (excluding the selected items). Then, choose the best suggestions (up to 3) from the tool's output and provide refined, user-friendly reasons for each choice. Ensure recommendations are from the available IDs AND are NOT already in my selected items.`,
 });
 
 
@@ -170,17 +156,20 @@ const recommendOutfitFlow = ai.defineFlow<
   async (input) => {
     console.log("[recommendOutfitFlow] Input received:", JSON.stringify(input, null, 2));
 
-    // Check if selected items exist
+    // Basic Input Validation
     if (!input.selectedItems || input.selectedItems.length === 0) {
       console.log("[recommendOutfitFlow] No items selected, returning empty recommendations.");
       return { recommendations: [] };
     }
-     // Ensure available items are provided
      if (!input.availableItemIds || input.availableItemIds.length === 0) {
        console.error("[recommendOutfitFlow] Error: No availableItemIds provided to the flow.");
-       // Returning empty instead of throwing to prevent client-side crashes on potential edge cases
-       return { recommendations: [] };
+       return { recommendations: [] }; // Return empty to prevent crashes
      }
+     if (input.availableItemIds.length <= input.selectedItems.length) {
+        console.warn("[recommendOutfitFlow] No items available for recommendation (available <= selected). Returning empty.");
+        return { recommendations: [] };
+     }
+
 
     // Call the AI model with the prompt, input, and available tools
     console.log("[recommendOutfitFlow] Calling recommendOutfitPrompt...");
@@ -189,61 +178,77 @@ const recommendOutfitFlow = ai.defineFlow<
 
     console.log("[recommendOutfitFlow] Raw AI Response Output:", JSON.stringify(output, null, 2));
 
+    // --- Post-processing and Validation ---
     if (!output?.recommendations) {
       console.warn("[recommendOutfitFlow] AI did not return a valid 'recommendations' structure. Returning empty.");
       return { recommendations: [] };
     }
 
-    // Post-validation: Ensure recommended items are actually available and not already selected
-    // The AI/tool *should* handle this based on prompts, but double-check here.
+    // Validate recommendations against input constraints (Safety Net)
     const selectedSet = new Set(input.selectedItems);
     const availableSet = new Set(input.availableItemIds);
+    let invalidCount = 0;
+
     const validatedRecommendations = output.recommendations.filter(rec => {
         const isAvailable = availableSet.has(rec.clothingItemId);
         const isNotSelected = !selectedSet.has(rec.clothingItemId);
-        if (!isAvailable) console.warn(`[recommendOutfitFlow Validation] Filtering out recommendation ${rec.clothingItemId} because it's NOT in the available list.`);
-        if (!isNotSelected) console.warn(`[recommendOutfitFlow Validation] Filtering out recommendation ${rec.clothingItemId} because it WAS already selected.`);
-        return isAvailable && isNotSelected;
-    }).slice(0, 3); // Ensure we don't exceed the max of 3 after filtering
+        const isValid = isAvailable && isNotSelected;
 
-     // Log if any recommendations were filtered out during post-validation
-     if (validatedRecommendations.length < output.recommendations.length) {
-        console.warn("[recommendOutfitFlow Validation] Post-validation filtered out some recommendations. Initial:", output.recommendations.length, "Final:", validatedRecommendations.length);
+        if (!isAvailable) {
+            console.warn(`[recommendOutfitFlow Validation] Filtering out recommendation ID ${rec.clothingItemId} because it's NOT in the available list.`);
+            invalidCount++;
+        }
+        if (!isNotSelected) {
+             console.warn(`[recommendOutfitFlow Validation] Filtering out recommendation ID ${rec.clothingItemId} because it WAS already selected.`);
+            invalidCount++;
+        }
+        return isValid;
+    }).slice(0, 3); // Ensure we strictly adhere to max 3 *after* validation
+
+     if (invalidCount > 0) {
+        console.warn(`[recommendOutfitFlow Validation] Post-validation filtered out ${invalidCount} invalid recommendations. Initial count: ${output.recommendations.length}, Final count: ${validatedRecommendations.length}`);
+     } else if (validatedRecommendations.length < output.recommendations.length) {
+         console.log(`[recommendOutfitFlow Validation] Trimmed recommendations from ${output.recommendations.length} to ${validatedRecommendations.length} to meet max limit.`);
+     } else {
+          console.log("[recommendOutfitFlow Validation] All AI recommendations passed validation.");
      }
 
 
     console.log(`[recommendOutfitFlow] Final Validated Recommendations (${validatedRecommendations.length}):`, JSON.stringify(validatedRecommendations, null, 2));
-    // Return the validated recommendations (up to 3 as defined in output schema)
+    // Return the validated and capped recommendations
     return { recommendations: validatedRecommendations };
   }
 );
 
 
-// Export the main function for external use
+// Export the main wrapper function for external use
 export async function recommendOutfit(input: RecommendOutfitInput): Promise<RecommendOutfitOutput> {
   try {
       console.log("[recommendOutfit Wrapper] called with input:", JSON.stringify(input, null, 2));
 
-      // Ensure availableItemIds are provided by the caller (page component)
-       if (!input.availableItemIds || input.availableItemIds.length === 0) {
+      // --- Input Validation in Wrapper (Guard Clause) ---
+      if (!input.availableItemIds || input.availableItemIds.length === 0) {
            console.error("[recommendOutfit Wrapper] Error: availableItemIds must be provided by the caller. Returning empty.");
-           return { recommendations: [] }; // Return empty or throw error
-       }
-        // Basic check for selected items
-       if (!input.selectedItems || input.selectedItems.length === 0) {
+           return { recommendations: [] };
+      }
+      if (!input.selectedItems || input.selectedItems.length === 0) {
            console.log("[recommendOutfit Wrapper] No items selected for recommendation input. Returning empty.");
            return { recommendations: [] };
-       }
+      }
+      if (input.availableItemIds.length <= input.selectedItems.length) {
+        console.warn("[recommendOutfit Wrapper] No items available for recommendation (available <= selected). Returning empty.");
+        return { recommendations: [] };
+      }
 
 
-      // Call the flow with the exact input received from the page
+      // Call the flow with the input received from the page component
       const result = await recommendOutfitFlow(input);
       console.log("[recommendOutfit Wrapper] Flow returned:", JSON.stringify(result, null, 2));
       return result;
+
    } catch (error: any) {
         console.error("[recommendOutfit Wrapper] Error executing recommendOutfit flow:", error.message || error);
-        // Optionally return a specific error structure or just empty
+        // Return empty on error to prevent breaking the UI
          return { recommendations: [] };
    }
 }
-
