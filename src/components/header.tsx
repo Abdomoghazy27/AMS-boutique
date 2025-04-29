@@ -1,6 +1,6 @@
 
 import Link from 'next/link'; // Import Link
-import { ShoppingBag, Tags, User, Settings, Search } from 'lucide-react'; // Added Search icon
+import { ShoppingBag, Tags, User, Settings, Search, Shirt } from 'lucide-react'; // Added Search and Shirt icons
 import { CartIcon } from './cart-icon'; // Import CartIcon
 import { Button } from './ui/button'; // Import Button for styling links
 import { SearchBar } from './search-bar'; // Import SearchBar
@@ -20,6 +20,11 @@ export function Header() {
                  <Link href="/">Home</Link>
              </Button>
              <Button variant="ghost" asChild>
+                <Link href="/products">
+                    <Shirt className="mr-1 h-4 w-4" /> Products {/* Added Products Link */}
+                </Link>
+             </Button>
+             <Button variant="ghost" asChild>
                 <Link href="/about">About Us</Link>
              </Button>
              <Button variant="ghost" asChild>
@@ -30,7 +35,6 @@ export function Header() {
                     <Tags className="mr-1 h-4 w-4" /> Sale
                  </Link>
               </Button>
-             {/* Add more links here if needed */}
           </nav>
         </div>
 
@@ -72,6 +76,11 @@ export function Header() {
                   <Link href="/">Home</Link>
                </Button>
                <Button variant="link" size="sm" asChild>
+                  <Link href="/products">
+                    <Shirt className="mr-1 h-4 w-4" /> Products {/* Added Products Link */}
+                  </Link>
+               </Button>
+               <Button variant="link" size="sm" asChild>
                   <Link href="/about">About</Link>
                </Button>
                <Button variant="link" size="sm" asChild>
@@ -88,3 +97,4 @@ export function Header() {
     </header>
   );
 }
+

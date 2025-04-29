@@ -1,60 +1,54 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getClothingItems, ClothingItem, GetClothingItemsFilters } from '@/services/clothing';
-import { ClothingList } from '@/components/clothing-list';
-import { FilterOptions } from '@/components/filter-options';
+// Removed ClothingList and FilterOptions imports
 import { OutfitRecommendations } from '@/components/outfit-recommendations';
-import { TrendingProducts } from '@/components/trending-products'; // Import TrendingProducts
-import { NewArrivals } from '@/components/new-arrivals'; // Import NewArrivals
+import { TrendingProducts } from '@/components/trending-products';
+import { NewArrivals } from '@/components/new-arrivals';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Flame, Sparkles, Tags, Loader2, Wand2, Shuffle } from 'lucide-react'; // Import icons, Added Shuffle
-
+import { Flame, Sparkles, Tags, Loader2, Wand2, Shirt } from 'lucide-react'; // Added Shirt icon, removed Shuffle
 
 export default function Home() {
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<ClothingItem[]>([]);
+  // Removed filteredItems and filters state
   const [trendingItems, setTrendingItems] = useState<ClothingItem[]>([]);
   const [newArrivals, setNewArrivals] = useState<ClothingItem[]>([]);
-  const [filters, setFilters] = useState<GetClothingItemsFilters>({});
   // State for randomly generated outfit items
-  const [randomOutfitItems, setRandomOutfitItems] = useState<ClothingItem[] | null>(null); // Renamed state and changed type
-  const [isLoadingItems, setIsLoadingItems] = useState(true);
-  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false); // Keep this for the button loading state
+  const [randomOutfitItems, setRandomOutfitItems] = useState<ClothingItem[] | null>(null);
+  // Removed isLoadingItems state
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
   const [isLoadingNewArrivals, setIsLoadingNewArrivals] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { toast } = useToast();
 
 
-  // Fetch initial data for all sections
+  // Fetch initial data for trending, new arrivals, and AI suggestions
   useEffect(() => {
     const fetchAllData = async () => {
-      console.log("[Page Effect - Fetch All] Starting initial data fetch...");
-      setIsLoadingItems(true);
+      console.log("[Page Effect - Fetch All] Starting initial data fetch for homepage sections...");
+      // Removed setIsLoadingItems(true);
       setIsLoadingTrending(true);
       setIsLoadingNewArrivals(true);
-      setIsInitialLoad(true); // Ensure this is true at the start
+      setIsInitialLoad(true);
       try {
-        // Fetch all items first
+        // Fetch all items needed for random suggestions and arrivals
         const allItems = await getClothingItems();
         console.log(`[Page Effect - Fetch All] Fetched ${allItems.length} total items.`);
-        setAllClothingItems(allItems);
-        setFilteredItems(allItems); // Initially display all in main list
+        setAllClothingItems(allItems); // Keep all items for random suggestions
 
-        // Fetch trending items (using the filter)
+        // Fetch trending items
         const trending = await getClothingItems({ isTrending: true });
         console.log(`[Page Effect - Fetch All] Fetched ${trending.length} trending items.`);
         setTrendingItems(trending);
 
-        // Fetch new arrivals (simulate by taking last 5 added items - adjust logic as needed)
-        // Ensure we don't take more than available if total items < 5
-        const arrivals = allItems.slice(-Math.min(5, allItems.length)); // Use slice(-limit) for last N items
+        // Fetch new arrivals
+        const arrivals = allItems.slice(-Math.min(5, allItems.length));
         console.log(`[Page Effect - Fetch All] Determined ${arrivals.length} new arrivals.`);
         setNewArrivals(arrivals);
 
@@ -65,63 +59,24 @@ export default function Home() {
             description: "Could not load some products. Please try refreshing.",
             variant: "destructive",
           });
-           // Set all states to empty on error to prevent partial loading display
+           // Set all relevant states to empty on error
            setAllClothingItems([]);
-           setFilteredItems([]);
            setTrendingItems([]);
            setNewArrivals([]);
       } finally {
           console.log("[Page Effect - Fetch All] Finished initial data fetch.");
-          setIsLoadingItems(false);
+          // Removed setIsLoadingItems(false);
           setIsLoadingTrending(false);
           setIsLoadingNewArrivals(false);
-          setIsInitialLoad(false); // Mark initial load as complete
+          setIsInitialLoad(false);
       }
     };
     fetchAllData();
   }, [toast]);
 
-  // Filter main clothing list whenever filters or allClothingItems change (but not during initial load)
-  useEffect(() => {
-    if (isInitialLoad) {
-        console.log("[Page Effect - Filter] Skipping filter on initial load.");
-        return;
-    }
+  // Removed the useEffect hook for filtering items as it's no longer needed on the homepage
 
-    console.log("[Page Effect - Filter] Applying filters:", filters);
-    setIsLoadingItems(true);
-    const timer = setTimeout(async () => {
-       try {
-           // Pass the current filters object
-           const items = await getClothingItems(filters);
-           console.log(`[Page Effect - Filter] Filtering complete. Found ${items.length} items.`);
-           setFilteredItems(items);
-       } catch (error) {
-            console.error("[Page Effect - Filter] Failed to filter clothing items:", error);
-             toast({
-               title: "Error Filtering",
-               description: "Could not apply filters. Please try again.",
-               variant: "destructive",
-             });
-       } finally {
-          console.log("[Page Effect - Filter] Filter process finished.");
-          setIsLoadingItems(false);
-       }
-    }, 300); // Debounce filter application slightly
-
-    return () => {
-        console.log("[Page Effect - Filter] Cleanup: Clearing filter timer.");
-        clearTimeout(timer);
-    }
-
-  }, [filters, allClothingItems, isInitialLoad, toast]); // Depend on filters and all items
-
-
-  // Handler for filter changes
-  const handleFilterChange = useCallback((newFilters: GetClothingItemsFilters) => {
-    console.log("[Page Handler - FilterChange] New filters received:", newFilters);
-    setFilters(newFilters);
-  }, []);
+  // Removed handleFilterChange callback
 
 
    // Handler for the "Generate Random Outfit" button click
@@ -173,21 +128,9 @@ export default function Home() {
     }, [allClothingItems, toast]);
 
 
-  const filterOptions = useMemo(() => {
-    // Prevent recalculation if allClothingItems is empty initially
-    if (!allClothingItems || allClothingItems.length === 0) {
-        console.log("[Page Memo - FilterOptions] allClothingItems is empty, returning empty options.");
-        return { categories: [], sizes: [], colors: [] };
-    }
-    console.log("[Page Memo - FilterOptions] Recalculating filter options based on allClothingItems.");
-    const categories = [...new Set(allClothingItems.map(item => item.category))].sort();
-    const sizes = [...new Set(allClothingItems.flatMap(item => item.sizes))].sort();
-    const colors = [...new Set(allClothingItems.flatMap(item => item.colors))].sort();
-    console.log("[Page Memo - FilterOptions] Calculated options:", { categories, sizes, colors });
-    return { categories, sizes, colors };
-  }, [allClothingItems]);
+  // Removed useMemo for filterOptions as it's no longer needed here
 
-  console.log("[Page Render] Rendering Home component. States:", { isLoadingItems, isLoadingRecommendations, isLoadingTrending, isLoadingNewArrivals, isInitialLoad, randomOutfitItemsCount: randomOutfitItems?.length ?? 0 });
+  console.log("[Page Render] Rendering Home component. States:", { isLoadingRecommendations, isLoadingTrending, isLoadingNewArrivals, isInitialLoad, randomOutfitItemsCount: randomOutfitItems?.length ?? 0 });
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
@@ -206,8 +149,11 @@ export default function Home() {
              Explore our curated collection of modern fashion essentials. Get inspired with AI suggestions, discover trending styles, and shop our latest arrivals.
            </p>
             <div className="flex flex-wrap justify-center gap-4">
+                 {/* Updated button to link to /products */}
                  <Button asChild size="lg">
-                     <Link href="#explore-collection">Explore Collection</Link>
+                     <Link href="/products">
+                        <Shirt className="mr-2 h-5 w-5" /> Explore Collection
+                     </Link>
                  </Button>
                  <Button variant="outline" asChild size="lg">
                       <Link href="/sale">
@@ -225,11 +171,11 @@ export default function Home() {
                  <CardHeader>
                    <CardTitle className="text-xl font-semibold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-primary">
                       <div className='flex items-center gap-2'>
-                          <Wand2 className="h-6 w-6" /> {/* Changed icon to Wand2 */} AI Suggestion
+                          <Wand2 className="h-6 w-6" /> AI Suggestion
                       </div>
                        <Button
-                          onClick={handleGenerateRandomOutfit} // Updated handler
-                          disabled={isLoadingRecommendations || allClothingItems.length < 3} // Disable if loading or not enough items loaded
+                          onClick={handleGenerateRandomOutfit}
+                          disabled={isLoadingRecommendations || allClothingItems.length < 3}
                           className="mt-2 sm:mt-0"
                         >
                           {isLoadingRecommendations ? (
@@ -238,7 +184,7 @@ export default function Home() {
                               </>
                           ) : (
                               <>
-                                <Wand2 className="mr-2 h-4 w-4" /> Get AI Suggestion {/* Changed icon & text */}
+                                <Wand2 className="mr-2 h-4 w-4" /> Get AI Suggestion
                               </>
                           )}
                        </Button>
@@ -246,12 +192,10 @@ export default function Home() {
                    <CardDescription>Click the button to get an AI-generated selection of 3 items from our collection for inspiration.</CardDescription>
                  </CardHeader>
                  <CardContent>
-                     {/* Pass the random outfit items to the component */}
                      <OutfitRecommendations
-                       recommendedItems={randomOutfitItems} // Pass the randomly selected items
-                       isLoading={isLoadingRecommendations} // Pass the specific loading state
-                       isGeneratedOutfit={true} // Indicate this is from the button click
-                       // No longer need clothingData here as items are passed directly
+                       recommendedItems={randomOutfitItems}
+                       isLoading={isLoadingRecommendations}
+                       isGeneratedOutfit={true}
                      />
                  </CardContent>
              </Card>
@@ -282,44 +226,10 @@ export default function Home() {
             />
        </section>
 
-
-       <Separator />
-
-
-       {/* Main Collection Section */}
-       <section id="explore-collection">
-           <h2 className="text-3xl font-bold mb-6 text-center">Explore Our Collection</h2>
-            {(isLoadingItems && isInitialLoad) || (allClothingItems.length === 0 && isLoadingItems) ? ( // Show filter skeleton only during initial item load or if still loading and no items yet
-               <div className="mb-6 space-y-4 animate-pulse">
-                  <div className="h-16 bg-muted rounded-lg"></div> {/* Filter card header placeholder */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-muted rounded-lg">
-                    <div className="h-10 bg-muted-foreground/20 rounded"></div>
-                    <div className="h-10 bg-muted-foreground/20 rounded"></div>
-                    <div className="h-10 bg-muted-foreground/20 rounded"></div>
-                    <div className="h-10 bg-primary/40 rounded md:col-span-3"></div>
-                  </div>
-                </div>
-            ) : (
-               // Render filters only when *not* initial load AND filter options are ready
-               !isInitialLoad && filterOptions.categories.length > 0 && (
-                 <FilterOptions
-                    categories={filterOptions.categories}
-                    sizes={filterOptions.sizes}
-                    colors={filterOptions.colors}
-                    onFilterChange={handleFilterChange}
-                    initialFilters={filters}
-                  />
-               )
-            )}
-
-            <ClothingList
-              items={filteredItems}
-              // Show loading state if initial load is happening OR if filtering is in progress
-              isLoading={isInitialLoad || isLoadingItems}
-             />
-        </section>
+       {/* REMOVED Main Collection Section */}
+       {/* <Separator /> */}
+       {/* <section id="explore-collection"> ... </section> */}
 
     </div>
   );
 }
-

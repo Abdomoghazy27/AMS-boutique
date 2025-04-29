@@ -26,10 +26,10 @@ export function Footer() {
             <h4 className="font-semibold text-foreground mb-3">Quick Links</h4>
             <ul className="space-y-1 text-sm">
               <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
+              <li><Link href="/products" className="hover:text-primary transition-colors">All Products</Link></li> {/* Added Products Link */}
               <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
               <li><Link href="/cart" className="hover:text-primary transition-colors">Shopping Cart</Link></li>
-               {/* Add link to product listing if needed */}
-               {/* <li><Link href="/products">All Products</Link></li> */}
+              <li><Link href="/sale" className="hover:text-primary transition-colors">Sale</Link></li>
             </ul>
           </div>
 
