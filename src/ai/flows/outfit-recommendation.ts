@@ -11,6 +11,8 @@
 import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 import { ClothingItem } from '@/services/clothing'; // Import ClothingItem type
+import type {CandidateResponse} from 'genkit'; // Import the expected response type
+
 
 // Simplified Input: Only needs available items and optional preferences
 const RecommendOutfitInputSchema = z.object({
@@ -114,27 +116,43 @@ const recommendOutfitFlow = ai.defineFlow<
     console.log(`[recommendOutfitFlow @ ${Date.now()}] Input validation passed. ${input.availableItemIds.length} available items.`);
 
     // --- Call the AI model ---
-    let response;
+    let response: CandidateResponse<z.infer<typeof recommendOutfitPrompt.outputSchema>> | undefined;
     // Define output type based on the *prompt's* output schema (which still has min(2))
     let promptOutput: z.infer<typeof recommendOutfitPrompt.outputSchema> | null | undefined;
     try {
-      const callStartTime = Date.now();
-      console.log(`[recommendOutfitFlow @ ${callStartTime}] Calling recommendOutfitPrompt...`);
-      response = await recommendOutfitPrompt(input);
-      // Access output using response.output()
-      promptOutput = response?.output(); // Use optional chaining in case response is unexpected
-      const callEndTime = Date.now();
-      console.log(`[recommendOutfitFlow @ ${callEndTime}] Raw AI Response Output (took ${callEndTime - callStartTime}ms):`, JSON.stringify(promptOutput, null, 2));
+        const callStartTime = Date.now();
+        console.log(`[recommendOutfitFlow @ ${callStartTime}] Calling recommendOutfitPrompt...`);
+        response = await recommendOutfitPrompt(input); // AI call
+        const callEndTime = Date.now();
+        console.log(`[recommendOutfitFlow @ ${callEndTime}] Raw AI Response Object (took ${callEndTime - callStartTime}ms):`, response); // Log the *entire* response object
 
-      // Check if the output method exists and the result is valid *before* accessing further
-      if (typeof response?.output !== 'function' || !promptOutput) {
-          throw new Error("Invalid response structure from AI model - output() method missing or returned null/undefined.");
-      }
+        // Check if the response object and its output method are valid *before* trying to call output()
+        if (!response || typeof response.output !== 'function') {
+            console.error(`[recommendOutfitFlow @ ${Date.now()}] Invalid response structure from AI model. Response object:`, response);
+            // Log the detailed raw response content if available and if response is not null/undefined
+            if (response && typeof (response as any).response === 'function') {
+                 console.error(`[recommendOutfitFlow @ ${Date.now()}] Detailed raw response content:`, (response as any).response());
+            } else if (response) {
+                 console.error(`[recommendOutfitFlow @ ${Date.now()}] Detailed raw response (no .response() method):`, JSON.stringify(response));
+            }
+            throw new Error("Invalid response structure from AI model - output() method missing or response is invalid.");
+        }
+
+        // If the structure is valid, proceed to get the output
+        promptOutput = response.output(); // Now we know response and response.output exist
+        console.log(`[recommendOutfitFlow @ ${Date.now()}] Parsed AI Response Output:`, JSON.stringify(promptOutput, null, 2));
+
+        // Check if promptOutput itself is null/undefined (even if output() function existed)
+        if (!promptOutput) {
+             console.warn(`[recommendOutfitFlow @ ${Date.now()}] AI response issue: Output() returned null/undefined. Raw response object:`, response?.response ? response.response() : response);
+             // This case might be redundant now but acts as a fallback
+             return { recommendations: [], outfitReason: "AI Response Error: The AI model returned an empty response after parsing." };
+        }
 
     } catch (aiError: any) {
         const errorTime = Date.now();
          // Log detailed error information if possible
-        console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call. Message: ${aiError?.message}. Details:`, aiError);
+        console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call or response processing. Message: ${aiError?.message}. Details:`, aiError);
          // This return value is now valid according to the updated RecommendOutfitOutputSchema
          return { recommendations: [], outfitReason: `AI Generation Error: ${aiError?.message || 'Failed to get a valid response from the AI model.'}` };
     }
@@ -142,10 +160,11 @@ const recommendOutfitFlow = ai.defineFlow<
 
     // --- Post-processing and Validation ---
     // Use the promptOutput variable which holds the result of response.output()
+    // Additional check for safety, though covered by earlier checks
     if (!promptOutput || !promptOutput.recommendations || !Array.isArray(promptOutput.recommendations)) {
       const warnTime = Date.now();
       // Add logging for the raw response from the AI before it's processed
-      console.warn(`[recommendOutfitFlow @ ${warnTime}] AI response issue: Invalid 'recommendations' structure or null/undefined output. Raw response object:`, response?.response()); // Log raw response if available
+      console.warn(`[recommendOutfitFlow @ ${warnTime}] AI response issue: Invalid 'recommendations' structure after parsing. Raw response object:`, response?.response ? response.response() : response); // Log raw response if available
       console.warn(`[recommendOutfitFlow @ ${warnTime}] Parsed output object:`, JSON.stringify(promptOutput, null, 2));
       // This return value is now valid according to the updated RecommendOutfitOutputSchema
       return { recommendations: [], outfitReason: "AI Response Error: The format of the generated response was unexpected." };
@@ -303,3 +322,6 @@ const dummyItems = [
 // Add a type definition for the dummy data structure if needed elsewhere
 export type DummyItem = typeof dummyItems[0];
 
+
+
+    
