@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Import Input
-import { Label } from '@/components/ui/label'; // Import Label
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { User, Settings, ShoppingBag, Mail, Edit, Save, XCircle } from 'lucide-react'; // Import icons
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { User, Settings, ShoppingBag, Mail, Edit, Save, XCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   // Placeholder user data - replace with actual data fetching when auth is implemented
@@ -24,9 +24,44 @@ export default function ProfilePage() {
   };
 
   const [user, setUser] = useState(initialUser);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(user.name);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [editedEmail, setEditedEmail] = useState(user.email);
   const { toast } = useToast();
+
+  const handleEditName = () => {
+    setEditedName(user.name); // Reset edited name to current name
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+  };
+
+  const handleSaveName = () => {
+    // Basic name validation (e.g., not empty)
+    if (!editedName || editedName.trim().length === 0) {
+      toast({
+        title: 'Invalid Name',
+        description: 'Please enter a valid name.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Simulate saving the name (replace with actual API call)
+    console.log('Saving new name:', editedName);
+    // Update initials based on the new name
+    const newInitials = editedName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    setUser((prevUser) => ({ ...prevUser, name: editedName.trim(), initials: newInitials }));
+    setIsEditingName(false);
+    toast({
+      title: 'Name Updated',
+      description: 'Your name has been successfully updated.',
+    });
+  };
+
 
   const handleEditEmail = () => {
     setEditedEmail(user.email); // Reset edited email to current email
@@ -38,7 +73,7 @@ export default function ProfilePage() {
   };
 
   const handleSaveEmail = () => {
-    // Basic email validation (can be more complex)
+    // Basic email validation
     if (!editedEmail || !/\S+@\S+\.\S+/.test(editedEmail)) {
       toast({
         title: 'Invalid Email',
@@ -48,7 +83,7 @@ export default function ProfilePage() {
       return;
     }
 
-    // Simulate saving the email (replace with actual API call)
+    // Simulate saving the email
     console.log('Saving new email:', editedEmail);
     setUser((prevUser) => ({ ...prevUser, email: editedEmail }));
     setIsEditingEmail(false);
@@ -67,8 +102,34 @@ export default function ProfilePage() {
             <AvatarImage src={user.avatarUrl} alt={user.name} />
             <AvatarFallback className="text-2xl">{user.initials}</AvatarFallback>
           </Avatar>
-          <CardTitle className="text-3xl font-bold">{user.name}</CardTitle>
-          <CardDescription className="text-muted-foreground flex items-center gap-1">
+          {/* Display or Edit Name */}
+          {isEditingName ? (
+             <div className="flex items-center gap-2 mt-2">
+                 <Input
+                    id="name"
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="h-10 text-center text-lg font-bold" // Larger input for name
+                    aria-label="Edit Name"
+                 />
+                  <Button size="sm" onClick={handleSaveName} className="h-10">
+                      <Save className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleCancelEditName} className="h-10">
+                     <XCircle className="h-4 w-4" />
+                 </Button>
+             </div>
+          ) : (
+            <div className="flex items-center gap-2">
+                 <CardTitle className="text-3xl font-bold">{user.name}</CardTitle>
+                 <Button variant="ghost" size="icon" onClick={handleEditName} className="h-7 w-7 text-muted-foreground hover:text-primary">
+                    <Edit className="h-4 w-4" />
+                    <span className="sr-only">Edit Name</span>
+                 </Button>
+            </div>
+          )}
+          <CardDescription className="text-muted-foreground flex items-center gap-1 mt-1">
              <Mail className="h-4 w-4" /> {user.email}
           </CardDescription>
            <CardDescription className="text-sm text-muted-foreground mt-1">Member since {user.memberSince}</CardDescription>
@@ -80,15 +141,18 @@ export default function ProfilePage() {
                  <div className="flex items-center gap-2">
                     <User className="h-5 w-5" /> Account Details
                  </div>
-                {!isEditingEmail && (
-                     <Button variant="ghost" size="sm" onClick={handleEditEmail} className="text-xs">
-                       <Edit className="h-3 w-3 mr-1" /> Edit Email
-                     </Button>
-                 )}
+                 {/* Edit Email Button */}
+                 {!isEditingEmail && !isEditingName && ( // Only show if not editing name or email
+                      <Button variant="ghost" size="sm" onClick={handleEditEmail} className="text-xs">
+                        <Edit className="h-3 w-3 mr-1" /> Edit Email
+                      </Button>
+                  )}
              </h3>
               <div className="space-y-2 text-sm text-muted-foreground">
+                  {/* Name Display (not editable here, edited in header) */}
                   <p><span className="font-medium text-foreground">Name:</span> {user.name}</p>
-                   {/* Email Display/Edit Section */}
+
+                  {/* Email Display/Edit Section */}
                    <div className="flex items-center gap-2">
                      <Label htmlFor="email" className="font-medium text-foreground min-w-[50px]">Email:</Label>
                      {isEditingEmail ? (
