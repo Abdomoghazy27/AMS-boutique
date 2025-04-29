@@ -1,13 +1,14 @@
 
 import Link from 'next/link'; // Import Link
-import { ShoppingBag, Tags, User, Settings } from 'lucide-react'; // Added Settings icon
+import { ShoppingBag, Tags, User, Settings, Search } from 'lucide-react'; // Added Settings, Search icons
 import { CartIcon } from './cart-icon'; // Import CartIcon
 import { Button } from './ui/button'; // Import Button for styling links
+import { SearchBar } from './search-bar'; // Import SearchBar
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between"> {/* Increased height slightly */}
+      <div className="container flex h-16 items-center justify-between gap-4"> {/* Adjusted gap */}
         <div className="flex items-center gap-4"> {/* Group logo, title, and nav */}
           <Link href="/" className="flex items-center space-x-2">
             <ShoppingBag className="h-7 w-7 text-primary" /> {/* Slightly larger icon */}
@@ -32,6 +33,12 @@ export function Header() {
              {/* Add more links here if needed */}
           </nav>
         </div>
+
+         {/* Search Bar - Centered on larger screens */}
+         <div className="flex-1 flex justify-center px-4 hidden lg:flex">
+            <SearchBar />
+         </div>
+
         <div className="flex items-center gap-2"> {/* Container for icons/actions */}
            {/* Settings Icon */}
            <Button variant="ghost" size="icon" asChild>
@@ -49,35 +56,42 @@ export function Header() {
            {/* Add other actions like login here */}
         </div>
       </div>
-       {/* Mobile Navigation (Optional - can be implemented with a Sheet component) */}
-       <nav className="md:hidden flex justify-center items-center gap-2 border-t py-2 overflow-x-auto"> {/* Make mobile nav scrollable */}
-           <Button variant="link" size="sm" asChild>
-              <Link href="/">Home</Link>
-           </Button>
-           <Button variant="link" size="sm" asChild>
-              <Link href="/about">About</Link>
-           </Button>
-           <Button variant="link" size="sm" asChild>
-              <Link href="/policy">Policies</Link>
-           </Button>
-           <Button variant="link" size="sm" asChild className="text-destructive">
-              <Link href="/sale">
-                <Tags className="mr-1 h-4 w-4" /> Sale
-              </Link>
-           </Button>
-           {/* Add Settings link for mobile */}
-           <Button variant="link" size="sm" asChild>
-             <Link href="/settings">
-               <Settings className="mr-1 h-4 w-4" /> Settings
-             </Link>
-           </Button>
-           {/* Add Profile link for mobile */}
-            <Button variant="link" size="sm" asChild>
-              <Link href="/profile">
-                 <User className="mr-1 h-4 w-4" /> Profile
-              </Link>
-            </Button>
-       </nav>
+       {/* Mobile Navigation & Search */}
+       <div className="md:hidden flex flex-col border-t">
+          {/* Search Bar on Mobile */}
+           <div className="p-2 border-b">
+               <SearchBar />
+           </div>
+           {/* Mobile Nav Links */}
+           <nav className="flex justify-center items-center gap-2 py-2 overflow-x-auto"> {/* Make mobile nav scrollable */}
+               <Button variant="link" size="sm" asChild>
+                  <Link href="/">Home</Link>
+               </Button>
+               <Button variant="link" size="sm" asChild>
+                  <Link href="/about">About</Link>
+               </Button>
+               <Button variant="link" size="sm" asChild>
+                  <Link href="/policy">Policies</Link>
+               </Button>
+               <Button variant="link" size="sm" asChild className="text-destructive">
+                  <Link href="/sale">
+                    <Tags className="mr-1 h-4 w-4" /> Sale
+                  </Link>
+               </Button>
+               {/* Add Settings link for mobile */}
+               <Button variant="link" size="sm" asChild>
+                 <Link href="/settings">
+                   <Settings className="mr-1 h-4 w-4" /> Settings
+                 </Link>
+               </Button>
+               {/* Add Profile link for mobile */}
+                <Button variant="link" size="sm" asChild>
+                  <Link href="/profile">
+                     <User className="mr-1 h-4 w-4" /> Profile
+                  </Link>
+                </Button>
+           </nav>
+       </div>
     </header>
   );
 }

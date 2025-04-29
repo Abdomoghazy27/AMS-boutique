@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
-import { ClothingItem } from '@/services/clothing'; // Import ClothingItem type
+import type { ClothingItem } from '@/services/clothing'; // Import ClothingItem type
 import type {CandidateResponse} from 'genkit'; // Import the expected response type
 
 
@@ -124,35 +124,55 @@ const recommendOutfitFlow = ai.defineFlow<
         console.log(`[recommendOutfitFlow @ ${callStartTime}] Calling recommendOutfitPrompt...`);
         response = await recommendOutfitPrompt(input); // AI call
         const callEndTime = Date.now();
-        console.log(`[recommendOutfitFlow @ ${callEndTime}] Raw AI Response Object (took ${callEndTime - callStartTime}ms):`, response); // Log the *entire* response object
+        console.log(`[recommendOutfitFlow @ ${callEndTime}] Raw AI Response Object Received (took ${callEndTime - callStartTime}ms)`);
 
         // Check if the response object and its output method are valid *before* trying to call output()
         if (!response || typeof response.output !== 'function') {
-            console.error(`[recommendOutfitFlow @ ${Date.now()}] Invalid response structure from AI model. Response object:`, response);
-            // Log the detailed raw response content if available and if response is not null/undefined
-            if (response && typeof (response as any).response === 'function') {
-                 console.error(`[recommendOutfitFlow @ ${Date.now()}] Detailed raw response content:`, (response as any).response());
-            } else if (response) {
-                 console.error(`[recommendOutfitFlow @ ${Date.now()}] Detailed raw response (no .response() method):`, JSON.stringify(response));
-            }
+            const errorTime = Date.now();
+            console.error(`[recommendOutfitFlow @ ${errorTime}] Invalid response structure from AI model. The response object or its output() method is missing or invalid.`);
+            // Log the raw response content if possible for diagnosis
+             try {
+                // Use optional chaining and check if response.response exists and is a function before calling
+                const rawContent = response?.response && typeof response.response === 'function' ? await response.response() : response;
+                console.error(`[recommendOutfitFlow @ ${errorTime}] Detailed raw response content:`, JSON.stringify(rawContent, null, 2));
+             } catch (logError) {
+                 console.error(`[recommendOutfitFlow @ ${errorTime}] Failed to log raw response content:`, logError);
+             }
+
             throw new Error("Invalid response structure from AI model - output() method missing or response is invalid.");
         }
 
-        // If the structure is valid, proceed to get the output
+        // If the structure seems valid, proceed to get the output
         promptOutput = response.output(); // Now we know response and response.output exist
-        console.log(`[recommendOutfitFlow @ ${Date.now()}] Parsed AI Response Output:`, JSON.stringify(promptOutput, null, 2));
+        const parseEndTime = Date.now();
+        console.log(`[recommendOutfitFlow @ ${parseEndTime}] Parsed AI Response Output (parse took ${parseEndTime - callEndTime}ms):`, JSON.stringify(promptOutput, null, 2));
 
         // Check if promptOutput itself is null/undefined (even if output() function existed)
         if (!promptOutput) {
-             console.warn(`[recommendOutfitFlow @ ${Date.now()}] AI response issue: Output() returned null/undefined. Raw response object:`, response?.response ? response.response() : response);
-             // This case might be redundant now but acts as a fallback
-             return { recommendations: [], outfitReason: "AI Response Error: The AI model returned an empty response after parsing." };
+             const errorTime = Date.now();
+             console.warn(`[recommendOutfitFlow @ ${errorTime}] AI response issue: Output() returned null/undefined after parsing.`);
+              try {
+                 const rawContent = response?.response && typeof response.response === 'function' ? await response.response() : response;
+                 console.warn(`[recommendOutfitFlow @ ${errorTime}] Raw response object that led to null/undefined output:`, JSON.stringify(rawContent, null, 2));
+              } catch (logError) {
+                 console.error(`[recommendOutfitFlow @ ${errorTime}] Failed to log raw response content for null/undefined output case:`, logError);
+              }
+             return { recommendations: [], outfitReason: "AI Response Error: The AI model returned an empty or unparsable response." };
         }
 
     } catch (aiError: any) {
         const errorTime = Date.now();
          // Log detailed error information if possible
         console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call or response processing. Message: ${aiError?.message}. Details:`, aiError);
+         // Log raw response if available and error wasn't due to invalid response structure itself
+         if (response && !aiError.message.includes('Invalid response structure')) {
+             try {
+                 const rawContent = response?.response && typeof response.response === 'function' ? await response.response() : response;
+                 console.error(`[recommendOutfitFlow @ ${errorTime}] Raw AI Response leading to error:`, JSON.stringify(rawContent, null, 2));
+             } catch (logError) {
+                 console.error(`[recommendOutfitFlow @ ${errorTime}] Failed to log raw response content during error handling:`, logError);
+             }
+         }
          // This return value is now valid according to the updated RecommendOutfitOutputSchema
          return { recommendations: [], outfitReason: `AI Generation Error: ${aiError?.message || 'Failed to get a valid response from the AI model.'}` };
     }
@@ -164,8 +184,14 @@ const recommendOutfitFlow = ai.defineFlow<
     if (!promptOutput || !promptOutput.recommendations || !Array.isArray(promptOutput.recommendations)) {
       const warnTime = Date.now();
       // Add logging for the raw response from the AI before it's processed
-      console.warn(`[recommendOutfitFlow @ ${warnTime}] AI response issue: Invalid 'recommendations' structure after parsing. Raw response object:`, response?.response ? response.response() : response); // Log raw response if available
-      console.warn(`[recommendOutfitFlow @ ${warnTime}] Parsed output object:`, JSON.stringify(promptOutput, null, 2));
+       console.warn(`[recommendOutfitFlow @ ${warnTime}] AI response issue: Invalid 'recommendations' structure after parsing.`);
+      try {
+          const rawContent = response?.response && typeof response.response === 'function' ? await response.response() : response;
+          console.warn(`[recommendOutfitFlow @ ${warnTime}] Raw response object:`, JSON.stringify(rawContent, null, 2)); // Log raw response if available
+      } catch (logError) {
+           console.error(`[recommendOutfitFlow @ ${warnTime}] Failed to log raw response content during invalid structure check:`, logError);
+      }
+      console.warn(`[recommendOutfitFlow @ ${warnTime}] Parsed output object that failed validation:`, JSON.stringify(promptOutput, null, 2));
       // This return value is now valid according to the updated RecommendOutfitOutputSchema
       return { recommendations: [], outfitReason: "AI Response Error: The format of the generated response was unexpected." };
     }
