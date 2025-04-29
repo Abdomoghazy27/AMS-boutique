@@ -2,59 +2,85 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { getClothingItems, ClothingItem } from '@/services/clothing';
+import { getClothingItems, ClothingItem, GetClothingItemsFilters } from '@/services/clothing';
 import { recommendOutfit, RecommendOutfitInput, RecommendOutfitOutput } from '@/ai/flows/outfit-recommendation';
 import { ClothingList } from '@/components/clothing-list';
 import { FilterOptions } from '@/components/filter-options';
 import { OutfitRecommendations } from '@/components/outfit-recommendations';
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from '@/hooks/use-toast'; // Import useToast
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
-import { Separator } from '@/components/ui/separator'; // Import Separator
+import { TrendingProducts } from '@/components/trending-products'; // Import TrendingProducts
+import { NewArrivals } from '@/components/new-arrivals'; // Import NewArrivals
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Flame, Sparkles, Tags } from 'lucide-react'; // Import icons
+
 
 export default function Home() {
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ClothingItem[]>([]);
-  const [filters, setFilters] = useState<{ category?: string; size?: string; color?: string }>({});
-  // State for items specifically selected for outfit recommendations (distinct from cart)
+  const [trendingItems, setTrendingItems] = useState<ClothingItem[]>([]);
+  const [newArrivals, setNewArrivals] = useState<ClothingItem[]>([]);
+  const [filters, setFilters] = useState<GetClothingItemsFilters>({});
   const [recommendationInputItems, setRecommendationInputItems] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<RecommendOutfitOutput | null>(null);
   const [isLoadingItems, setIsLoadingItems] = useState(true);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true);
+  const [isLoadingNewArrivals, setIsLoadingNewArrivals] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { toast } = useToast();
 
 
-  // Fetch initial data
+  // Fetch initial data for all sections
   useEffect(() => {
-    const fetchItems = async () => {
-      console.log("[Page Effect - Fetch Items] Starting initial fetch...");
+    const fetchAllData = async () => {
+      console.log("[Page Effect - Fetch All] Starting initial data fetch...");
       setIsLoadingItems(true);
+      setIsLoadingTrending(true);
+      setIsLoadingNewArrivals(true);
       try {
-        // In a real app, filters could be passed here if needed initially
-        const items = await getClothingItems();
-        console.log(`[Page Effect - Fetch Items] Fetched ${items.length} items.`);
-        setAllClothingItems(items);
-        setFilteredItems(items); // Initially display all items
+        // Fetch all items first
+        const allItems = await getClothingItems();
+        console.log(`[Page Effect - Fetch All] Fetched ${allItems.length} total items.`);
+        setAllClothingItems(allItems);
+        setFilteredItems(allItems); // Initially display all in main list
+
+        // Fetch trending items (using the filter)
+        const trending = await getClothingItems({ isTrending: true });
+        console.log(`[Page Effect - Fetch All] Fetched ${trending.length} trending items.`);
+        setTrendingItems(trending);
+
+        // Fetch new arrivals (simulate by taking last 5 added items - adjust logic as needed)
+        const arrivals = allItems.slice(-5); // Example: newest are last
+        console.log(`[Page Effect - Fetch All] Determined ${arrivals.length} new arrivals.`);
+        setNewArrivals(arrivals);
+
       } catch (error) {
-          console.error("[Page Effect - Fetch Items] Failed to fetch clothing items:", error);
+          console.error("[Page Effect - Fetch All] Failed to fetch initial data:", error);
           toast({
-            title: "Error",
-            description: "Could not load clothing items. Please try refreshing.",
+            title: "Error Loading Content",
+            description: "Could not load some products. Please try refreshing.",
             variant: "destructive",
           });
-           setAllClothingItems([]); // Set to empty on error
+           // Set all states to empty on error to prevent partial loading display
+           setAllClothingItems([]);
            setFilteredItems([]);
+           setTrendingItems([]);
+           setNewArrivals([]);
       } finally {
-          console.log("[Page Effect - Fetch Items] Finished initial fetch.");
+          console.log("[Page Effect - Fetch All] Finished initial data fetch.");
           setIsLoadingItems(false);
+          setIsLoadingTrending(false);
+          setIsLoadingNewArrivals(false);
           setIsInitialLoad(false);
       }
     };
-    fetchItems();
-  }, [toast]); // Add toast to dependency array
+    fetchAllData();
+  }, [toast]);
 
-  // Filter items whenever filters or allClothingItems change
+  // Filter main clothing list whenever filters or allClothingItems change
   useEffect(() => {
     if (isInitialLoad) {
         console.log("[Page Effect - Filter] Skipping filter on initial load.");
@@ -63,74 +89,64 @@ export default function Home() {
 
     console.log("[Page Effect - Filter] Filters changed, starting filter process:", filters);
     setIsLoadingItems(true);
-    // Simulate filtering delay for UX feedback
     const timer = setTimeout(async () => {
        try {
-           const items = await getClothingItems(filters.category, filters.size, filters.color);
+           // Pass the current filters object
+           const items = await getClothingItems(filters);
            console.log(`[Page Effect - Filter] Filtering complete. Found ${items.length} items.`);
            setFilteredItems(items);
        } catch (error) {
             console.error("[Page Effect - Filter] Failed to filter clothing items:", error);
              toast({
-               title: "Error",
+               title: "Error Filtering",
                description: "Could not apply filters. Please try again.",
                variant: "destructive",
              });
-             // Optionally reset filters or keep previous results
-             // setFilteredItems(allClothingItems);
        } finally {
           console.log("[Page Effect - Filter] Filter process finished.");
           setIsLoadingItems(false);
        }
-    }, 300); // Debounce filtering slightly
+    }, 300);
 
     return () => {
         console.log("[Page Effect - Filter] Cleanup: Clearing filter timer.");
-        clearTimeout(timer); // Cleanup timer on unmount or filter change
+        clearTimeout(timer);
     }
 
-  }, [filters, allClothingItems, isInitialLoad, toast]); // Add toast to dependency array
+  }, [filters, allClothingItems, isInitialLoad, toast]);
 
 
   // Get outfit recommendations when recommendationInputItems change
-  useEffect(() => {
+   useEffect(() => {
     console.log("[Page Effect - Recs] Triggered. Input items:", recommendationInputItems);
 
     if (recommendationInputItems.length === 0) {
       console.log("[Page Effect - Recs] No items selected for recommendations. Clearing existing and stopping loading.");
-      setRecommendations(null); // Clear recommendations if no items are selected for it
-      setIsLoadingRecommendations(false); // Ensure loading stops if selection is cleared
+      setRecommendations(null);
+      setIsLoadingRecommendations(false);
       return;
     }
 
-    // Ensure allClothingItems is loaded before proceeding
     if (allClothingItems.length === 0) {
         console.log("[Page Effect - Recs] Waiting for all clothing items to load before requesting recommendations.");
-        // Do not set loading state here, wait for items
         return;
     }
 
-    // Define the async function to get recommendations
     const getRecommendations = async () => {
       console.log("[Page Effect - Recs] Preparing to fetch recommendations...");
       setIsLoadingRecommendations(true);
-      setRecommendations(null); // Clear previous recommendations while loading new ones
+      setRecommendations(null);
       try {
-         // Pass the *full* list of available item IDs. Filtering happens in the AI flow/tool.
          const allAvailableItemIds = allClothingItems.map(item => item.id);
          console.log(`[Page Effect - Recs] All available item IDs (${allAvailableItemIds.length}):`, allAvailableItemIds);
 
         const input: RecommendOutfitInput = {
           selectedItems: recommendationInputItems,
-          availableItemIds: allAvailableItemIds, // Pass the full list of IDs
-          // Potentially add stylePreferences or previouslyViewedItems (from state/context)
+          availableItemIds: allAvailableItemIds,
         };
         console.log("[Page Effect - Recs] Calling recommendOutfit with input:", JSON.stringify(input, null, 2));
         const result = await recommendOutfit(input);
          console.log("[Page Effect - Recs] Received recommendations result:", JSON.stringify(result, null, 2));
-
-        // Check if the component is still mounted and the input hasn't changed during the async call
-        // This check might be needed if state updates rapidly, though unlikely with the debounce
          setRecommendations(result);
 
       } catch (error) {
@@ -140,46 +156,41 @@ export default function Home() {
            description: 'Could not fetch outfit recommendations.',
            variant: 'destructive',
          });
-        setRecommendations(null); // Clear recommendations on error
+        setRecommendations(null);
       } finally {
         console.log("[Page Effect - Recs] Finished fetching recommendations.");
         setIsLoadingRecommendations(false);
       }
     };
 
-    // Debounce the recommendation call
     console.log("[Page Effect - Recs] Setting debounce timer (500ms)...");
-    const debounceTimer = setTimeout(getRecommendations, 500); // Wait 500ms
+    const debounceTimer = setTimeout(getRecommendations, 500);
 
      return () => {
         console.log("[Page Effect - Recs] Cleanup: Clearing recommendation debounce timer.");
         clearTimeout(debounceTimer);
      }
-  // IMPORTANT: Include all dependencies that the effect reads
   }, [recommendationInputItems, allClothingItems, toast]);
 
 
-  const handleFilterChange = useCallback((newFilters: { category?: string; size?: string; color?: string }) => {
+  const handleFilterChange = useCallback((newFilters: GetClothingItemsFilters) => {
     console.log("[Page Handler - FilterChange] New filters received:", newFilters);
     setFilters(newFilters);
   }, []);
 
-   // Handler specifically for adding/removing items to trigger AI recommendations
    const handleToggleOutfitRecs = useCallback((item: ClothingItem) => {
      console.log(`[Page Handler - ToggleRecs] Toggling item: ${item.id} (${item.name})`);
      setRecommendationInputItems(prev => {
        let newItems;
        if (prev.includes(item.id)) {
-         // Remove item
          newItems = prev.filter(id => id !== item.id);
          console.log(`[Page Handler - ToggleRecs] Item ${item.id} removed. New input list:`, newItems);
          toast({
             title: 'Stopped Considering Item',
             description: `${item.name} removed from outfit recommendations consideration.`,
-            variant: 'default', // Use default or a custom style
+            variant: 'default',
           });
        } else {
-         // Add item
          newItems = [...prev, item.id];
          console.log(`[Page Handler - ToggleRecs] Item ${item.id} added. New input list:`, newItems);
           toast({
@@ -192,7 +203,6 @@ export default function Home() {
    }, [toast]);
 
 
-  // Memoize filter options to avoid recalculating on every render
   const filterOptions = useMemo(() => {
     console.log("[Page Memo - FilterOptions] Recalculating filter options based on allClothingItems.");
     const categories = [...new Set(allClothingItems.map(item => item.category))].sort();
@@ -204,64 +214,111 @@ export default function Home() {
   console.log("[Page Render] Rendering component. isLoadingItems:", isLoadingItems, "isLoadingRecommendations:", isLoadingRecommendations, "Input Items:", recommendationInputItems.length, "Recommendations:", recommendations?.recommendations?.length ?? 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 space-y-12">
        {/* Headline Section */}
-       <Card className="mb-8 text-center shadow-lg bg-gradient-to-r from-primary/10 to-secondary/10 border-none">
-        <CardHeader>
+       <Card className="text-center shadow-lg bg-gradient-to-r from-primary/10 to-secondary/10 border-none overflow-hidden">
+        <CardHeader className="p-8 md:p-12">
            <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
               Welcome to AMS Boutique
            </CardTitle>
-           <CardDescription className="text-lg text-muted-foreground mt-2">
+           <CardDescription className="text-lg text-muted-foreground mt-3">
               Discover Your Style. Elevate Your Wardrobe.
            </CardDescription>
          </CardHeader>
-         <CardContent>
-           <p className="text-muted-foreground max-w-2xl mx-auto">
-             Explore our curated collection of modern fashion essentials. Use our AI-powered assistant to find the perfect outfit combinations.
+         <CardContent className="pb-8 md:pb-12">
+           <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+             Explore our curated collection of modern fashion essentials. Use our AI-powered assistant to find the perfect outfit combinations, discover trending styles, and shop our latest arrivals.
            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+                 <Button asChild size="lg">
+                     <Link href="#explore-collection">Explore Collection</Link>
+                 </Button>
+                 <Button variant="outline" asChild size="lg">
+                      <Link href="/sale">
+                        <Tags className="mr-2 h-5 w-5" /> Shop Sale
+                      </Link>
+                 </Button>
+            </div>
          </CardContent>
        </Card>
 
-       <Separator className="my-8" />
+        {/* Trending Products Section */}
+        <section>
+             <h2 className="text-3xl font-bold mb-6 text-center flex items-center justify-center gap-2">
+               <Flame className="h-7 w-7 text-primary" /> Trending Now
+             </h2>
+             <TrendingProducts
+                items={trendingItems}
+                isLoading={isLoadingTrending}
+                onToggleForRecommendations={handleToggleOutfitRecs} // Pass handler if needed on these cards too
+                recommendationInputItemIds={recommendationInputItems}
+             />
+        </section>
 
-       <h2 className="text-2xl font-bold mb-6 text-center">Explore Our Collection</h2>
+        <Separator />
 
-      {isInitialLoad ? (
-         <div className="mb-6 space-y-4 animate-pulse">
-            <div className="h-16 bg-muted rounded-lg"></div> {/* Filter card header placeholder */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-muted rounded-lg">
-              <div className="h-10 bg-muted-foreground/20 rounded"></div> {/* Select placeholders */}
-              <div className="h-10 bg-muted-foreground/20 rounded"></div>
-              <div className="h-10 bg-muted-foreground/20 rounded"></div>
-              <div className="h-10 bg-primary/40 rounded md:col-span-3"></div> {/* Button placeholder */}
-            </div>
-          </div>
-      ) : (
-        <FilterOptions
-            categories={filterOptions.categories}
-            sizes={filterOptions.sizes}
-            colors={filterOptions.colors}
-            onFilterChange={handleFilterChange}
-            initialFilters={filters}
-          />
-      )}
+       {/* New Arrivals Section */}
+       <section>
+            <h2 className="text-3xl font-bold mb-6 text-center flex items-center justify-center gap-2">
+                <Sparkles className="h-7 w-7 text-primary" /> New Arrivals
+            </h2>
+            <NewArrivals
+                items={newArrivals}
+                isLoading={isLoadingNewArrivals}
+                onToggleForRecommendations={handleToggleOutfitRecs} // Pass handler
+                recommendationInputItemIds={recommendationInputItems}
+            />
+       </section>
 
-      {/* Pass down the toggle handler and the list of IDs being considered */}
-      <ClothingList
-        items={filteredItems}
-        isLoading={isLoadingItems}
-        onToggleForRecommendations={handleToggleOutfitRecs}
-        recommendationInputItemIds={recommendationInputItems}
-       />
 
-      {/* Pass handleToggleOutfitRecs and the list of input IDs */}
-      <OutfitRecommendations
-        recommendations={recommendations}
-        clothingData={allClothingItems} // Pass all items for lookup
-        isLoading={isLoadingRecommendations}
-        onToggleForRecommendations={handleToggleOutfitRecs} // Pass toggle handler
-        recommendationInputItemIds={recommendationInputItems} // Pass the list of IDs being considered
-      />
+       <Separator />
+
+
+       {/* Main Collection Section */}
+       <section id="explore-collection">
+           <h2 className="text-3xl font-bold mb-6 text-center">Explore Our Collection</h2>
+            {isInitialLoad && !isLoadingItems ? ( // Show filters only after initial load completes
+               <div className="mb-6 space-y-4 animate-pulse">
+                  <div className="h-16 bg-muted rounded-lg"></div> {/* Filter card header placeholder */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-muted rounded-lg">
+                    <div className="h-10 bg-muted-foreground/20 rounded"></div>
+                    <div className="h-10 bg-muted-foreground/20 rounded"></div>
+                    <div className="h-10 bg-muted-foreground/20 rounded"></div>
+                    <div className="h-10 bg-primary/40 rounded md:col-span-3"></div>
+                  </div>
+                </div>
+            ) : (
+              <FilterOptions
+                  categories={filterOptions.categories}
+                  sizes={filterOptions.sizes}
+                  colors={filterOptions.colors}
+                  onFilterChange={handleFilterChange}
+                  initialFilters={filters}
+                />
+            )}
+
+            <ClothingList
+              items={filteredItems}
+              isLoading={isLoadingItems}
+              onToggleForRecommendations={handleToggleOutfitRecs}
+              recommendationInputItemIds={recommendationInputItems}
+             />
+        </section>
+
+       <Separator />
+
+        {/* Outfit Recommendations Section */}
+         <section>
+            {/* This component handles its own title/structure */}
+              <OutfitRecommendations
+                recommendations={recommendations}
+                clothingData={allClothingItems}
+                isLoading={isLoadingRecommendations}
+                onToggleForRecommendations={handleToggleOutfitRecs}
+                recommendationInputItemIds={recommendationInputItems}
+              />
+         </section>
+
     </div>
   );
 }

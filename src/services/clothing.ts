@@ -32,12 +32,25 @@ export interface ClothingItem {
    */
   category: string;
   /**
-   * The price of the clothing item.
+   * The original price of the clothing item.
    */
   price: number;
+  /**
+   * Indicates if the item is currently on sale.
+   */
+  isOnSale?: boolean;
+   /**
+    * The sale price of the item, if applicable.
+    */
+  salePrice?: number;
+   /**
+    * Indicates if the item is currently trending.
+    * (Using this as a simple flag, could be based on views/sales in a real app)
+    */
+   isTrending?: boolean;
 }
 
-// More extensive dummy data with prices and new items
+// More extensive dummy data with prices, sale items, and trending flags
 const dummyItems: ClothingItem[] = [
   {
     id: '1',
@@ -48,6 +61,7 @@ const dummyItems: ClothingItem[] = [
     colors: ['White', 'Black', 'Gray'],
     category: 'T-Shirts',
     price: 25.00,
+    isTrending: true,
   },
   {
     id: '2',
@@ -58,6 +72,7 @@ const dummyItems: ClothingItem[] = [
     colors: ['Dark Wash', 'Light Wash', 'Black'],
     category: 'Jeans',
     price: 75.50,
+    isTrending: true,
   },
   {
     id: '3',
@@ -68,6 +83,9 @@ const dummyItems: ClothingItem[] = [
     colors: ['Pink Floral', 'Blue Floral', 'Yellow Floral'],
     category: 'Dresses',
     price: 89.99,
+    isOnSale: true,
+    salePrice: 69.99,
+    isTrending: true,
   },
   {
     id: '4',
@@ -98,6 +116,7 @@ const dummyItems: ClothingItem[] = [
     colors: ['Black', 'Brown'],
     category: 'Outerwear',
     price: 199.99,
+    isTrending: true,
   },
    {
     id: '7',
@@ -118,6 +137,8 @@ const dummyItems: ClothingItem[] = [
     colors: ['Blue Denim', 'Black Denim'],
     category: 'Skirts',
     price: 45.00,
+    isOnSale: true,
+    salePrice: 35.00,
   },
    {
     id: '9',
@@ -148,6 +169,7 @@ const dummyItems: ClothingItem[] = [
     colors: ['Olive Green', 'Black', 'Maroon'],
     category: 'Outerwear',
     price: 95.00,
+    isTrending: true,
   },
    {
     id: '12',
@@ -158,6 +180,8 @@ const dummyItems: ClothingItem[] = [
     colors: ['White', 'Navy', 'Red', 'Green'],
     category: 'Shirts',
     price: 39.95,
+    isOnSale: true,
+    salePrice: 29.95,
   },
   {
     id: '13',
@@ -208,6 +232,8 @@ const dummyItems: ClothingItem[] = [
     colors: ['Camel', 'Gray', 'Black'],
     category: 'Outerwear',
     price: 250.00,
+    isOnSale: true,
+    salePrice: 199.99,
   },
    {
     id: '18',
@@ -238,39 +264,55 @@ const dummyItems: ClothingItem[] = [
     colors: ['Champagne', 'Black', 'Silver'],
     category: 'Tops', // Could also be T-Shirts or Shirts depending on taxonomy
     price: 58.00,
+    isTrending: true,
   }
 ];
+
+
+/**
+ * Interface defining the filter options for retrieving clothing items.
+ */
+export interface GetClothingItemsFilters {
+  category?: string;
+  size?: string;
+  color?: string;
+  isOnSale?: boolean; // Added filter for sale items
+  isTrending?: boolean; // Added filter for trending items
+}
 
 
 /**
  * Asynchronously retrieves clothing items based on specified filters.
  * This is a mock implementation using dummy data and simulates network delay.
  *
- * @param category The category to filter clothing items.
- * @param size The size to filter clothing items.
- * @param color The color to filter clothing items.
+ * @param filters Optional object containing filter criteria.
  * @returns A promise that resolves to an array of ClothingItem objects that match the specified filters.
  */
 export async function getClothingItems(
-  category?: string,
-  size?: string,
-  color?: string
+  filters: GetClothingItemsFilters = {}
 ): Promise<ClothingItem[]> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500));
 
   let filteredItems = dummyItems;
 
-  if (category) {
-    filteredItems = filteredItems.filter(item => item.category === category);
+  if (filters.category) {
+    filteredItems = filteredItems.filter(item => item.category === filters.category);
   }
-  if (size) {
+  if (filters.size) {
     // Handle 'One Size' items correctly
-    filteredItems = filteredItems.filter(item => item.sizes.includes(size) || item.sizes.includes('One Size'));
+    filteredItems = filteredItems.filter(item => item.sizes.includes(filters.size!) || item.sizes.includes('One Size'));
   }
-  if (color) {
-    filteredItems = filteredItems.filter(item => item.colors.includes(color));
+  if (filters.color) {
+    filteredItems = filteredItems.filter(item => item.colors.includes(filters.color!));
   }
+  if (filters.isOnSale) {
+    filteredItems = filteredItems.filter(item => item.isOnSale === true);
+  }
+    if (filters.isTrending) {
+    filteredItems = filteredItems.filter(item => item.isTrending === true);
+  }
+
 
   return filteredItems;
 }

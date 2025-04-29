@@ -1,6 +1,6 @@
 
 import Link from 'next/link'; // Import Link
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Tags } from 'lucide-react'; // Added Tags icon
 import { CartIcon } from './cart-icon'; // Import CartIcon
 import { Button } from './ui/button'; // Import Button for styling links
 
@@ -21,6 +21,11 @@ export function Header() {
              <Button variant="ghost" asChild>
                 <Link href="/policy">Policies</Link>
              </Button>
+              <Button variant="ghost" asChild className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                 <Link href="/sale">
+                    <Tags className="mr-1 h-4 w-4" /> Sale
+                 </Link>
+              </Button>
              {/* Add more links here if needed */}
           </nav>
         </div>
@@ -43,6 +48,11 @@ export function Header() {
            </Button>
            <Button variant="link" size="sm" asChild>
               <Link href="/policy">Policies</Link>
+           </Button>
+           <Button variant="link" size="sm" asChild className="text-destructive">
+              <Link href="/sale">
+                <Tags className="mr-1 h-4 w-4" /> Sale
+              </Link>
            </Button>
        </nav>
     </header>

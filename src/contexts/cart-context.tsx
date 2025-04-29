@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -31,7 +32,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
        const storedCart = localStorage.getItem('ams-boutique-cart');
        if (storedCart) {
          try {
-           setCartItems(JSON.parse(storedCart));
+           const parsedItems = JSON.parse(storedCart);
+            // Basic validation (check if it's an array)
+           if (Array.isArray(parsedItems)) {
+             setCartItems(parsedItems);
+           } else {
+              console.warn("Invalid cart data found in localStorage. Resetting cart.");
+              localStorage.removeItem('ams-boutique-cart');
+           }
          } catch (error) {
            console.error("Failed to parse cart from localStorage", error);
            localStorage.removeItem('ams-boutique-cart'); // Clear corrupted data
@@ -54,12 +62,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         cartItem => cartItem.id === item.id && cartItem.selectedSize === size && cartItem.selectedColor === color
       );
 
+       // Determine the correct price to use (sale price if available, otherwise original price)
+       const priceToAdd = item.isOnSale && item.salePrice ? item.salePrice : item.price;
+
       if (existingItemIndex > -1) {
-        // Item with same size and color exists, update quantity
+        // Item exists, update quantity and ensure price is current
         const updatedItems = [...prevItems];
         updatedItems[existingItemIndex] = {
           ...updatedItems[existingItemIndex],
           quantity: updatedItems[existingItemIndex].quantity + quantity,
+          price: priceToAdd, // Ensure price reflects current sale status
+          isOnSale: item.isOnSale, // Update sale status
+          salePrice: item.salePrice, // Update sale price
         };
         toast({
            title: 'Cart Updated',
@@ -67,12 +81,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
          });
         return updatedItems;
       } else {
-        // Add new item
+        // Add new item with the correct price
          toast({
            title: 'Item Added to Cart',
            description: `${item.name} (${size}, ${color}) added.`,
          });
-        return [...prevItems, { ...item, selectedSize: size, selectedColor: color, quantity }];
+          // Create the new CartItem object, ensuring all necessary fields from ClothingItem are included
+         const newItem: CartItem = {
+            ...item, // Spread all properties from the base ClothingItem
+            price: priceToAdd, // Use the determined price
+            selectedSize: size,
+            selectedColor: color,
+            quantity: quantity
+         };
+         return [...prevItems, newItem];
       }
     });
   }, [toast]);
@@ -94,6 +116,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [toast]);
 
   const updateQuantity = useCallback((itemId: string, size: string, color: string, quantity: number) => {
+     const itemToUpdate = cartItems.find(i => i.id === itemId && i.selectedSize === size && i.selectedColor === color);
+
     if (quantity <= 0) {
       removeItem(itemId, size, color);
       return;
@@ -105,11 +129,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           : item
       )
     );
-     const item = cartItems.find(i => i.id === itemId && i.selectedSize === size && i.selectedColor === color);
-      if(item){
+
+      if(itemToUpdate){
          toast({
            title: 'Quantity Updated',
-           description: `${item.name} (${size}, ${color}) quantity set to ${quantity}.`,
+           description: `${itemToUpdate.name} (${size}, ${color}) quantity set to ${quantity}.`,
          });
       }
   }, [removeItem, cartItems, toast]);
@@ -124,8 +148,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [toast]);
 
   const getCartTotal = useCallback(() => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  }, [cartItems]);
+     // Ensure the calculation uses the price stored in the cart item,
+     // which already reflects the sale price if applicable when added.
+     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+   }, [cartItems]);
 
   const getItemCount = useCallback(() => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
