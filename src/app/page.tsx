@@ -9,6 +9,8 @@ import { FilterOptions } from '@/components/filter-options';
 import { OutfitRecommendations } from '@/components/outfit-recommendations';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
+import { Separator } from '@/components/ui/separator'; // Import Separator
 
 export default function Home() {
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
@@ -203,7 +205,26 @@ export default function Home() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">Explore Our Collection</h1>
+       {/* Headline Section */}
+       <Card className="mb-8 text-center shadow-lg bg-gradient-to-r from-primary/10 to-secondary/10 border-none">
+        <CardHeader>
+           <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
+              Welcome to AMS Boutique
+           </CardTitle>
+           <CardDescription className="text-lg text-muted-foreground mt-2">
+              Discover Your Style. Elevate Your Wardrobe.
+           </CardDescription>
+         </CardHeader>
+         <CardContent>
+           <p className="text-muted-foreground max-w-2xl mx-auto">
+             Explore our curated collection of modern fashion essentials. Use our AI-powered assistant to find the perfect outfit combinations.
+           </p>
+         </CardContent>
+       </Card>
+
+       <Separator className="my-8" />
+
+       <h2 className="text-2xl font-bold mb-6 text-center">Explore Our Collection</h2>
 
       {isInitialLoad ? (
          <div className="mb-6 space-y-4 animate-pulse">

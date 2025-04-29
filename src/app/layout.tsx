@@ -1,7 +1,9 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer'; // Import Footer
 import { Toaster } from '@/components/ui/toaster';
 import { CartProvider } from '@/contexts/cart-context'; // Import CartProvider
 
@@ -26,11 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className="h-full"> {/* Ensure html takes full height */}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}> {/* Flex column layout */}
         <CartProvider> {/* Wrap with CartProvider */}
           <Header />
-          <main className="flex-1 pt-4 pb-16">{children}</main> {/* Add padding bottom */}
+          <main className="flex-grow pt-4 pb-16">{children}</main> {/* Use flex-grow to push footer down */}
+          <Footer /> {/* Add Footer component */}
           <Toaster />
         </CartProvider>
       </body>

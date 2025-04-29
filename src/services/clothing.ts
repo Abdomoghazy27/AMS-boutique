@@ -37,7 +37,7 @@ export interface ClothingItem {
   price: number;
 }
 
-// More extensive dummy data with prices
+// More extensive dummy data with prices and new items
 const dummyItems: ClothingItem[] = [
   {
     id: '1',
@@ -158,6 +158,86 @@ const dummyItems: ClothingItem[] = [
     colors: ['White', 'Navy', 'Red', 'Green'],
     category: 'Shirts',
     price: 39.95,
+  },
+  {
+    id: '13',
+    name: 'Pleated Midi Skirt',
+    description: 'Elegant pleated midi skirt for a sophisticated look.',
+    imageUrl: 'https://picsum.photos/seed/midiskirt/400/300',
+    sizes: ['XS', 'S', 'M', 'L'],
+    colors: ['Blush Pink', 'Black', 'Forest Green'],
+    category: 'Skirts',
+    price: 62.00,
+  },
+   {
+    id: '14',
+    name: 'Linen Blend Trousers',
+    description: 'Lightweight and breathable linen blend trousers.',
+    imageUrl: 'https://picsum.photos/seed/linentrousers/400/300',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Beige', 'White', 'Light Blue'],
+    category: 'Pants',
+    price: 69.00,
+  },
+  {
+    id: '15',
+    name: 'Cashmere Scarf',
+    description: 'Luxuriously soft cashmere scarf.',
+    imageUrl: 'https://picsum.photos/seed/scarf/400/300',
+    sizes: ['One Size'],
+    colors: ['Camel', 'Charcoal Gray', 'Light Pink'],
+    category: 'Accessories',
+    price: 85.00,
+  },
+  {
+    id: '16',
+    name: 'V-Neck Blouse',
+    description: 'A flattering V-neck blouse, easy to dress up or down.',
+    imageUrl: 'https://picsum.photos/seed/blouse/400/300',
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    colors: ['Ivory', 'Black', 'Dusty Rose'],
+    category: 'Shirts',
+    price: 48.00,
+  },
+   {
+    id: '17',
+    name: 'Wool Blend Coat',
+    description: 'A warm and stylish wool blend coat for winter.',
+    imageUrl: 'https://picsum.photos/seed/coat/400/300',
+    sizes: ['S', 'M', 'L'],
+    colors: ['Camel', 'Gray', 'Black'],
+    category: 'Outerwear',
+    price: 250.00,
+  },
+   {
+    id: '18',
+    name: 'Canvas Tote Bag',
+    description: 'Durable and spacious canvas tote bag.',
+    imageUrl: 'https://picsum.photos/seed/totebag/400/300',
+    sizes: ['One Size'],
+    colors: ['Natural', 'Navy Stripe', 'Black'],
+    category: 'Accessories',
+    price: 35.00,
+  },
+   {
+    id: '19',
+    name: 'High-Waisted Shorts',
+    description: 'Comfortable high-waisted shorts for warm weather.',
+    imageUrl: 'https://picsum.photos/seed/shorts/400/300',
+    sizes: ['XS', 'S', 'M', 'L'],
+    colors: ['Denim Blue', 'White', 'Khaki'],
+    category: 'Shorts',
+    price: 42.00,
+  },
+  {
+    id: '20',
+    name: 'Silk Camisole',
+    description: 'A luxurious silk camisole top.',
+    imageUrl: 'https://picsum.photos/seed/camisole/400/300',
+    sizes: ['S', 'M', 'L'],
+    colors: ['Champagne', 'Black', 'Silver'],
+    category: 'Tops', // Could also be T-Shirts or Shirts depending on taxonomy
+    price: 58.00,
   }
 ];
 
@@ -185,7 +265,8 @@ export async function getClothingItems(
     filteredItems = filteredItems.filter(item => item.category === category);
   }
   if (size) {
-    filteredItems = filteredItems.filter(item => item.sizes.includes(size));
+    // Handle 'One Size' items correctly
+    filteredItems = filteredItems.filter(item => item.sizes.includes(size) || item.sizes.includes('One Size'));
   }
   if (color) {
     filteredItems = filteredItems.filter(item => item.colors.includes(color));

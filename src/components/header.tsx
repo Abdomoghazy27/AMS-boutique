@@ -1,22 +1,50 @@
+
+import Link from 'next/link'; // Import Link
 import { ShoppingBag } from 'lucide-react';
 import { CartIcon } from './cart-icon'; // Import CartIcon
+import { Button } from './ui/button'; // Import Button for styling links
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between"> {/* Use justify-between */}
-        <div className="flex items-center"> {/* Group logo and title */}
-          <a href="/" className="flex items-center space-x-2">
-            <ShoppingBag className="h-6 w-6 text-primary" />
-            <span className="font-bold inline-block">AMS Boutique</span>
-          </a>
-          {/* Add navigation links here if needed */}
+      <div className="container flex h-16 items-center justify-between"> {/* Increased height slightly */}
+        <div className="flex items-center gap-4"> {/* Group logo, title, and nav */}
+          <Link href="/" className="flex items-center space-x-2">
+            <ShoppingBag className="h-7 w-7 text-primary" /> {/* Slightly larger icon */}
+            <span className="font-bold text-lg inline-block">AMS Boutique</span> {/* Slightly larger text */}
+          </Link>
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-2">
+             <Button variant="ghost" asChild>
+                <Link href="/about">About Us</Link>
+             </Button>
+             <Button variant="ghost" asChild>
+                <Link href="/policy">Policies</Link>
+             </Button>
+             {/* Add more links here if needed */}
+          </nav>
         </div>
-        <div className="flex items-center"> {/* Container for icons/actions */}
+        <div className="flex items-center gap-2"> {/* Container for icons/actions */}
+           {/* Mobile Menu Trigger (Optional - Add later if needed) */}
+           {/*
+           <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-6 w-6" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+           */}
            <CartIcon /> {/* Add CartIcon */}
            {/* Add other actions like user profile/login here */}
         </div>
       </div>
+       {/* Mobile Navigation (Optional - can be implemented with a Sheet component) */}
+       <nav className="md:hidden flex justify-center items-center gap-4 border-t py-2">
+           <Button variant="link" size="sm" asChild>
+              <Link href="/about">About</Link>
+           </Button>
+           <Button variant="link" size="sm" asChild>
+              <Link href="/policy">Policies</Link>
+           </Button>
+       </nav>
     </header>
   );
 }
