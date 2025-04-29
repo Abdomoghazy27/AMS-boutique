@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
+import { ClothingItem } from '@/services/clothing'; // Import ClothingItem type
 
 // Simplified Input: Only needs available items and optional preferences
 const RecommendOutfitInputSchema = z.object({
@@ -32,7 +33,7 @@ export type OutfitRecommendation = z.infer<typeof OutfitRecommendationSchema>;
 // Updated Output: Includes an overall reason for the suggested outfit
 const RecommendOutfitOutputSchema = z.object({
   recommendations: z.array(OutfitRecommendationSchema).min(2).max(5).describe('A list of 2 to 5 clothing items that form a cohesive outfit.'),
-  outfitReason: z.string().optional().describe('A concise explanation for why these items work well together as an outfit, considering the style preference if provided.'),
+  outfitReason: z.string().optional().describe('A concise explanation for why these items work well together as an outfit, considering the style preference if provided. Can also contain error messages.'),
 });
 export type RecommendOutfitOutput = z.infer<typeof RecommendOutfitOutputSchema>;
 
@@ -47,11 +48,11 @@ const recommendOutfitPrompt = ai.definePrompt({
     system: `You are a helpful fashion assistant and stylist for AMS Boutique. Your goal is to create a complete and stylish outfit suggestion consisting of 2 to 5 items from the available inventory.
 - Base the outfit primarily on common fashion principles (e.g., category pairing like top + bottom + optional layer/accessory, color coordination, occasion suitability).
 - If the user provides 'stylePreferences', prioritize creating an outfit that fits that style (e.g., 'business casual', 'beachwear', 'night out'). If no preference is given, suggest a versatile 'smart casual' outfit.
-- Select items *only* from the provided 'availableItemIds' list. Do NOT invent items.
+- Select items *only* from the provided 'availableItemIds' list. Do NOT invent items. Your response MUST ONLY include IDs from this list.
 - Aim for a balanced outfit. Include a top and a bottom at minimum. Consider adding a third piece like outerwear, a dress (counts as top+bottom), or a relevant accessory if appropriate for the style.
 - Provide a brief, engaging 'outfitReason' explaining why the suggested items form a good outfit, mentioning the style it fits.
 - Ensure the final output is a JSON object matching the specified format, containing an array named 'recommendations' (with item IDs only) and the optional 'outfitReason'.
-- **CRITICAL**: ONLY recommend items that are present in the 'availableItemIds' list.`,
+- **CRITICAL**: ONLY recommend items that are present in the 'availableItemIds' list. Double-check your response to ensure every recommended ID is from the provided list.`,
     // No tools needed for this version
     tools: [],
     // Input schema for the prompt
@@ -63,17 +64,18 @@ const recommendOutfitPrompt = ai.definePrompt({
         schema: RecommendOutfitOutputSchema,
     },
     // User prompt template (Handlebars)
-    prompt: `Please suggest a complete outfit (2-5 items) for me from the available items.
-{{#if stylePreferences}}My Style Preference: {{{stylePreferences}}}{{else}}Style Preference: Smart Casual (default){{/if}}
+    // Simplified prompt to be more direct
+    prompt: `Suggest a complete outfit (2-5 items) from the available items.
+{{#if stylePreferences}}Style Preference: {{{stylePreferences}}}{{else}}Style Preference: Smart Casual{{/if}}
 
-Full list of Available Item IDs in Store: {{#each availableItemIds}} {{this}}{{#unless @last}},{{/unless}}{{/each}}
+Available Item IDs: {{#each availableItemIds}} {{this}}{{#unless @last}},{{/unless}}{{/each}}
 
-**Instructions:**
-1. Select 2-5 items from the 'availableItemIds' list that create a cohesive outfit matching the specified (or default) style preference.
-2. Ensure the outfit includes at least a top and a bottom (or a dress equivalent).
-3. Provide an 'outfitReason' explaining the overall look.
-4. Format the output as specified in the output schema (recommendations array with clothingItemId only, and optional outfitReason).
-5. ONLY use items from the available list.`,
+Instructions:
+1. Select 2-5 items from the 'Available Item IDs' list to form a cohesive outfit matching the style preference.
+2. Include at least a top and a bottom (or equivalent like a dress).
+3. Provide an 'outfitReason'.
+4. Output ONLY JSON matching the required schema ('recommendations' array of objects with 'clothingItemId', and 'outfitReason' string).
+5. CRITICAL: Only use IDs from the 'Available Item IDs' list.`,
 });
 
 
@@ -88,71 +90,121 @@ const recommendOutfitFlow = ai.defineFlow<
     outputSchema: RecommendOutfitOutputSchema,
   },
   async (input) => {
-    console.log("[recommendOutfitFlow] Input received:", JSON.stringify(input, null, 2));
+    const flowStartTime = Date.now();
+    console.log(`[recommendOutfitFlow @ ${flowStartTime}] Input received:`, JSON.stringify(input, null, 2));
 
-    // Basic Input Validation
-     if (!input.availableItemIds || input.availableItemIds.length === 0) {
-       console.error("[recommendOutfitFlow] Error: No availableItemIds provided to the flow. Cannot generate recommendations. Returning empty.");
-       // Return an empty structure matching the output schema
-       return { recommendations: [], outfitReason: "Error: No items available to create an outfit from." };
-     }
-     if (input.availableItemIds.length < 2) {
-        console.warn("[recommendOutfitFlow] Warning: Fewer than 2 items available. Cannot create a full outfit. Returning empty.");
-        return { recommendations: [], outfitReason: "Not enough items available to suggest an outfit." };
-     }
+    // --- Input Validation ---
+    if (!input.availableItemIds || input.availableItemIds.length === 0) {
+      const errorTime = Date.now();
+      console.error(`[recommendOutfitFlow @ ${errorTime}] Error: No availableItemIds provided to the flow. Cannot generate recommendations.`);
+      return { recommendations: [], outfitReason: "Internal Error: No items were available to select from." };
+    }
+    if (input.availableItemIds.length < 2) {
+       const warnTime = Date.now();
+       console.warn(`[recommendOutfitFlow @ ${warnTime}] Warning: Fewer than 2 items available (${input.availableItemIds.length}). Cannot create a full outfit.`);
+       return { recommendations: [], outfitReason: "Not enough unique items available in the store to suggest a full outfit." };
+    }
+    console.log(`[recommendOutfitFlow @ ${Date.now()}] Input validation passed. ${input.availableItemIds.length} available items.`);
 
+    // --- Call the AI model ---
+    let response;
+    let output: RecommendOutfitOutput | null | undefined;
+    try {
+      const callStartTime = Date.now();
+      console.log(`[recommendOutfitFlow @ ${callStartTime}] Calling recommendOutfitPrompt...`);
+      response = await recommendOutfitPrompt(input);
+      output = response.output();
+      const callEndTime = Date.now();
+      console.log(`[recommendOutfitFlow @ ${callEndTime}] Raw AI Response Output (took ${callEndTime - callStartTime}ms):`, JSON.stringify(output, null, 2));
+    } catch (aiError: any) {
+        const errorTime = Date.now();
+        console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call:`, aiError.message || aiError, aiError.stack);
+         return { recommendations: [], outfitReason: `AI Generation Error: ${aiError.message || 'Failed to communicate with the AI model.'}` };
+    }
 
-    // Call the AI model with the prompt and input
-    console.log("[recommendOutfitFlow] Calling recommendOutfitPrompt...");
-    const response = await recommendOutfitPrompt(input);
-    const output = response.output();
-
-    console.log("[recommendOutfitFlow] Raw AI Response Output:", JSON.stringify(output, null, 2));
 
     // --- Post-processing and Validation ---
     if (!output || !output.recommendations || !Array.isArray(output.recommendations)) {
-      console.warn("[recommendOutfitFlow] AI did not return a valid 'recommendations' array structure or returned null/undefined. Returning empty.");
-      return { recommendations: [], outfitReason: "AI failed to generate a valid response structure." };
+      const warnTime = Date.now();
+      console.warn(`[recommendOutfitFlow @ ${warnTime}] AI did not return a valid 'recommendations' array structure or returned null/undefined. Raw output:`, JSON.stringify(output, null, 2));
+      return { recommendations: [], outfitReason: "AI Response Error: The generated response was not in the expected format." };
     }
 
      if (output.recommendations.length < 2) {
-       console.warn(`[recommendOutfitFlow] AI returned fewer than 2 items (${output.recommendations.length}). Returning empty as it's not a full outfit.`);
-       return { recommendations: [], outfitReason: "AI suggested too few items for a complete outfit." };
+       const warnTime = Date.now();
+       console.warn(`[recommendOutfitFlow @ ${warnTime}] AI returned fewer than 2 items (${output.recommendations.length}). Output:`, JSON.stringify(output.recommendations));
+       return { recommendations: [], outfitReason: "AI Suggestion Error: Suggested outfit has too few items." };
+     }
+     if (output.recommendations.length > 5) {
+       const warnTime = Date.now();
+       console.warn(`[recommendOutfitFlow @ ${warnTime}] AI returned more than 5 items (${output.recommendations.length}). Will truncate. Output:`, JSON.stringify(output.recommendations));
+       // We will truncate after validation anyway
      }
 
     // Validate recommendations against input constraints (Safety Net)
     const availableSet = new Set(input.availableItemIds);
     let invalidCount = 0;
+    let duplicateCount = 0;
+    const seenIds = new Set<string>();
 
-    const validatedRecommendations = output.recommendations.filter(rec => {
-        const isAvailable = availableSet.has(rec.clothingItemId);
-        if (!isAvailable) {
-            console.warn(`[recommendOutfitFlow Validation] Filtering out recommendation ID ${rec.clothingItemId} because it's NOT in the available list.`);
+    console.log(`[recommendOutfitFlow @ ${Date.now()}] Starting validation of ${output.recommendations.length} raw recommendations against ${availableSet.size} available IDs.`);
+
+    const validatedRecommendations = output.recommendations.map((rec, index) => {
+        // Check 1: Does the recommendation have a valid ID string?
+         if (!rec || typeof rec.clothingItemId !== 'string' || !rec.clothingItemId) {
+            console.warn(`[recommendOutfitFlow Validation @ ${Date.now()}] Filtering out invalid recommendation at index ${index}: Missing or invalid 'clothingItemId'. Rec:`, JSON.stringify(rec));
             invalidCount++;
+            return null; // Invalid structure
+         }
+
+        const itemId = rec.clothingItemId;
+
+        // Check 2: Is the item ID actually available?
+        const isAvailable = availableSet.has(itemId);
+        if (!isAvailable) {
+            console.warn(`[recommendOutfitFlow Validation @ ${Date.now()}] Filtering out recommendation ID ${itemId} because it's NOT in the available list.`);
+            invalidCount++;
+            return null; // Not available
         }
-        return isAvailable;
-    }).slice(0, 5); // Ensure we strictly adhere to max 5 *after* validation
 
-     if (invalidCount > 0) {
-        console.warn(`[recommendOutfitFlow Validation] Post-validation filtered out ${invalidCount} invalid recommendations (item not available). Initial count: ${output.recommendations.length}, Final count: ${validatedRecommendations.length}`);
-     } else if (validatedRecommendations.length < output.recommendations.length) {
-         console.log(`[recommendOutfitFlow Validation] Trimmed AI recommendations from ${output.recommendations.length} to ${validatedRecommendations.length} to meet max limit.`);
-     } else {
-          console.log("[recommendOutfitFlow Validation] All AI recommendations passed validation checks.");
-     }
+        // Check 3: Is this a duplicate within the recommendations?
+        if (seenIds.has(itemId)) {
+             console.warn(`[recommendOutfitFlow Validation @ ${Date.now()}] Filtering out duplicate recommendation ID ${itemId}.`);
+             duplicateCount++;
+             return null; // Duplicate
+        }
 
-     // If validation removed too many items, return empty
+        seenIds.add(itemId);
+        return rec; // Valid and unique recommendation
+
+    }).filter((rec): rec is OutfitRecommendation => rec !== null) // Filter out nulls and type guard
+      .slice(0, 5); // Ensure we strictly adhere to max 5 *after* validation
+
+
+     // --- Final Checks and Return ---
+     const validationEndTime = Date.now();
+     console.log(`[recommendOutfitFlow Validation @ ${validationEndTime}] Finished validation. ${invalidCount} invalid IDs, ${duplicateCount} duplicates removed. Initial count: ${output.recommendations.length}, Final count: ${validatedRecommendations.length}.`);
+
+
      if (validatedRecommendations.length < 2) {
-        console.warn(`[recommendOutfitFlow Validation] After validation, fewer than 2 items remain (${validatedRecommendations.length}). Returning empty.`);
-        return { recommendations: [], outfitReason: "Could not form a valid outfit with available items after AI suggestion." };
+        const errorTime = Date.now();
+        console.warn(`[recommendOutfitFlow @ ${errorTime}] After validation, fewer than 2 valid items remain (${validatedRecommendations.length}). Cannot form a complete outfit.`);
+        let reason = "Could not form a valid outfit suggestion.";
+        if (invalidCount > 0) reason += " Some suggested items were unavailable.";
+        if (duplicateCount > 0) reason += " Some duplicate items were suggested.";
+        if (output.recommendations.length > 0 && validatedRecommendations.length === 0) reason = "AI suggested items that were not available in the store.";
+        return { recommendations: [], outfitReason: reason };
      }
 
 
-    console.log(`[recommendOutfitFlow] Final Validated Recommendations (${validatedRecommendations.length}):`, JSON.stringify(validatedRecommendations, null, 2));
+    const flowEndTime = Date.now();
+    console.log(`[recommendOutfitFlow @ ${flowEndTime}] Final Validated Recommendations (${validatedRecommendations.length}):`, JSON.stringify(validatedRecommendations, null, 2));
+    console.log(`[recommendOutfitFlow @ ${flowEndTime}] Total Flow Execution Time: ${flowEndTime - flowStartTime}ms`);
     // Return the validated and capped recommendations with the outfit reason
     return {
         recommendations: validatedRecommendations,
-        outfitReason: output.outfitReason // Pass through the reason from the AI
+        // Use AI reason, or provide a fallback if AI didn't include one
+        outfitReason: output.outfitReason || "Here's a stylish outfit suggestion for you!"
     };
   }
 );
@@ -160,29 +212,35 @@ const recommendOutfitFlow = ai.defineFlow<
 
 // Export the main wrapper function for external use
 export async function recommendOutfit(input: RecommendOutfitInput): Promise<RecommendOutfitOutput> {
+  const wrapperStartTime = Date.now();
   try {
-      console.log("[recommendOutfit Wrapper] Initiating outfit recommendation with input:", JSON.stringify(input, null, 2));
+      console.log(`[recommendOutfit Wrapper @ ${wrapperStartTime}] Initiating outfit recommendation with input:`, JSON.stringify(input, null, 2));
 
       // --- Input Validation in Wrapper (Guard Clause) ---
       if (!input.availableItemIds || input.availableItemIds.length === 0) {
-           console.error("[recommendOutfit Wrapper] Error: availableItemIds MUST be provided by the caller. Returning empty.");
-           return { recommendations: [], outfitReason: "Input Error: Missing available items." };
+           const errorTime = Date.now();
+           console.error(`[recommendOutfit Wrapper @ ${errorTime}] Error: availableItemIds MUST be provided by the caller.`);
+           return { recommendations: [], outfitReason: "Input Error: Missing available items list." };
       }
        if (input.availableItemIds.length < 2) {
-           console.warn("[recommendOutfit Wrapper] Warning: Fewer than 2 items available in input. Cannot generate outfit. Returning empty.");
-            return { recommendations: [], outfitReason: "Input Error: Not enough items to form an outfit." };
+           const warnTime = Date.now();
+           console.warn(`[recommendOutfit Wrapper @ ${warnTime}] Warning: Fewer than 2 items available in input (${input.availableItemIds.length}). Cannot generate outfit.`);
+            return { recommendations: [], outfitReason: "Input Error: Not enough items provided to form an outfit." };
        }
-
+      console.log(`[recommendOutfit Wrapper @ ${Date.now()}] Input validation passed.`);
 
       // Call the flow with the input received from the page component
       const result = await recommendOutfitFlow(input);
-      console.log("[recommendOutfit Wrapper] Flow execution completed. Result:", JSON.stringify(result, null, 2));
+      const wrapperEndTime = Date.now();
+      console.log(`[recommendOutfit Wrapper @ ${wrapperEndTime}] Flow execution completed. Result:`, JSON.stringify(result, null, 2));
+      console.log(`[recommendOutfit Wrapper @ ${wrapperEndTime}] Total Wrapper Execution Time: ${wrapperEndTime - wrapperStartTime}ms`);
       return result;
 
    } catch (error: any) {
-        console.error("[recommendOutfit Wrapper] CRITICAL ERROR executing recommendOutfit flow:", error.message || error, error.stack);
-        // Return empty structure on error
-         return { recommendations: [], outfitReason: "An unexpected error occurred during generation." };
+        const errorTime = Date.now();
+        console.error(`[recommendOutfit Wrapper @ ${errorTime}] CRITICAL ERROR executing recommendOutfit flow:`, error.message || error, error.stack);
+        // Return empty structure on error with a generic message
+         return { recommendations: [], outfitReason: "An unexpected error occurred while generating the outfit suggestion. Please try again later." };
    }
 }
 

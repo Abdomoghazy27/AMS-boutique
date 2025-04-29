@@ -54,7 +54,8 @@ export default function Home() {
         setTrendingItems(trending);
 
         // Fetch new arrivals (simulate by taking last 5 added items - adjust logic as needed)
-        const arrivals = allItems.slice(-5); // Example: newest are last
+        // Ensure we don't take more than available if total items < 5
+        const arrivals = allItems.slice(Math.max(0, allItems.length - 5));
         console.log(`[Page Effect - Fetch All] Determined ${arrivals.length} new arrivals.`);
         setNewArrivals(arrivals);
 
@@ -131,49 +132,47 @@ export default function Home() {
       setIsLoadingRecommendations(true);
       setGeneratedOutfit(null); // Clear previous results
 
-      if (allClothingItems.length === 0) {
-         console.error(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Error: Cannot generate outfit, allClothingItems is empty.`);
-         toast({ title: 'Error', description: 'Product data not loaded yet. Please wait and try again.', variant: 'destructive' });
+      if (allClothingItems.length < 2) { // Need at least 2 items to form an outfit
+         console.error(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Error: Cannot generate outfit, not enough items available (${allClothingItems.length}).`);
+         toast({ title: 'Error', description: 'Not enough products loaded yet to generate an outfit. Please wait or refresh.', variant: 'destructive' });
          setIsLoadingRecommendations(false);
          return;
       }
 
       try {
         const allAvailableItemIds = allClothingItems.map(item => item.id);
-        if (allAvailableItemIds.length === 0) {
-           console.error(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Error: No available item IDs found.`);
-            throw new Error("No available item IDs found to provide to AI.");
-        }
         console.log(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Total available item IDs for AI: ${allAvailableItemIds.length}`);
 
          // Prepare input for the AI flow
-         // Optionally, you could add a way for the user to input style preferences later
          const input: RecommendOutfitInput = {
              availableItemIds: allAvailableItemIds,
              // stylePreferences: "casual chic" // Example: Add if you implement preferences
          };
 
-          console.log(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Calling recommendOutfit AI flow with input:`, JSON.stringify(input, null, 2));
+          console.log(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Calling recommendOutfit AI flow with input...`); // Removed input logging for brevity
           const result = await recommendOutfit(input);
           const generationEndTime = Date.now();
           console.log(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Received AI recommendations result (took ${generationEndTime - generationStartTime}ms):`, JSON.stringify(result, null, 2));
 
-           // Validate the result structure before setting state
-          if (result && Array.isArray(result.recommendations)) {
-              console.log(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Setting generatedOutfit state with ${result.recommendations.length} items.`);
-              setGeneratedOutfit(result);
+           // --- Set State and Show Toast Based on Result ---
+           setGeneratedOutfit(result); // Set the result regardless of success/failure, the component handles display
+
+           if (result && result.recommendations && result.recommendations.length >= 2) {
+               // Success case: We have at least 2 valid recommendations
+               console.log(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Generation successful. Setting generatedOutfit state with ${result.recommendations.length} items.`);
                toast({
-                  title: 'Outfit Suggestion Ready!',
-                  description: `AI has generated an outfit for you. ${result.outfitReason ?? ''}`,
-               });
+                   title: 'Outfit Suggestion Ready!',
+                   description: result.outfitReason || 'AI has generated an outfit for you.', // Show AI reason or default
+                });
            } else {
-              console.warn(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Received invalid or null recommendation structure from AI flow. Setting generatedOutfit to empty. Result:`, result);
-              setGeneratedOutfit({ recommendations: [], outfitReason: "Failed to generate suggestions." }); // Set to empty/error state
-               toast({
-                  title: 'Generation Failed',
-                  description: 'Could not generate an outfit suggestion at this time.',
-                  variant: 'destructive',
-               });
+               // Failure case: Less than 2 recommendations, or other error indicated by outfitReason
+                console.warn(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Generation failed or resulted in less than 2 valid items. Result:`, result);
+                 toast({
+                   title: 'Generation Issue',
+                   // Use the reason from the AI response if available, otherwise provide a generic message
+                   description: result?.outfitReason || 'Could not generate a valid outfit suggestion at this time. Please try again.',
+                   variant: 'destructive', // Use destructive variant for errors/issues
+                });
            }
 
       } catch (error) {
@@ -181,10 +180,11 @@ export default function Home() {
         console.error(`[Page Handler - GenerateOutfit @ ${errorTime}] CRITICAL ERROR generating outfit:`, error);
          toast({
             title: 'Generation Error',
-            description: 'An error occurred while generating the outfit suggestion.',
+            description: 'An unexpected error occurred while generating the outfit suggestion.',
             variant: 'destructive',
           });
-         setGeneratedOutfit({ recommendations: [], outfitReason: "Error during generation." }); // Set error state
+         // Set an error state in generatedOutfit to be displayed by the component
+         setGeneratedOutfit({ recommendations: [], outfitReason: "An unexpected error occurred during generation." });
       } finally {
         const finallyTime = Date.now();
         console.log(`[Page Handler - GenerateOutfit @ ${finallyTime}] Finished outfit generation process. Setting isLoadingRecommendations to false.`);
@@ -249,7 +249,7 @@ export default function Home() {
                       </div>
                        <Button
                           onClick={handleGenerateOutfit}
-                          disabled={isLoadingRecommendations || allClothingItems.length === 0} // Disable if loading or no items loaded
+                          disabled={isLoadingRecommendations || allClothingItems.length < 2} // Disable if loading or not enough items loaded
                           className="mt-2 sm:mt-0"
                         >
                           {isLoadingRecommendations ? (
