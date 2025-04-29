@@ -38,16 +38,20 @@ export function Header() {
           </nav>
         </div>
 
-         {/* Search Bar - Centered on larger screens */}
+         {/* Search Bar - Always render, but hide visually on smaller screens using Tailwind classes */}
          <div className="flex-1 flex justify-center px-4 hidden lg:flex">
-            <SearchBar />
+             {/* Pass key based on path or search to re-render if needed */}
+             {/* <SearchBar key={router.asPath} /> */}
+             <SearchBar />
          </div>
 
         <div className="flex items-center gap-1"> {/* Reduced gap for icons */}
-           {/* Search Icon (visible on smaller screens where search bar is hidden) - Now just an icon, no link */}
-           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Search Products (Use input below)">
-             <Search className="h-5 w-5" />
-           </Button>
+           {/* Search Icon (Acts as trigger on small screens? Or just visual cue?) */}
+           {/* Removing the button action for search icon as search bar is now below */}
+           <span className="lg:hidden text-muted-foreground p-2">
+               <Search className="h-5 w-5" />
+           </span>
+
            {/* Settings Icon */}
            <Button variant="ghost" size="icon" asChild>
              <Link href="/settings" aria-label="View Settings">
@@ -68,6 +72,8 @@ export function Header() {
        <div className="md:hidden flex flex-col border-t">
           {/* Search Bar on Mobile */}
            <div className="p-2 border-b">
+               {/* Pass key based on path or search to re-render if needed */}
+               {/* <SearchBar key={router.asPath + '-mobile'} /> */}
                <SearchBar />
            </div>
            {/* Mobile Nav Links */}
@@ -97,4 +103,3 @@ export function Header() {
     </header>
   );
 }
-

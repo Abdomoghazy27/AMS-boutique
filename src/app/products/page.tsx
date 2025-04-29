@@ -1,90 +1,104 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getClothingItems, ClothingItem, GetClothingItemsFilters } from '@/services/clothing';
 import { ClothingList } from '@/components/clothing-list';
 import { FilterOptions } from '@/components/filter-options';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shirt } from 'lucide-react'; // Import Shirt icon
+import { Shirt, Search as SearchIcon } from 'lucide-react'; // Import Shirt and Search icons
 
-export default function ProductsPage() {
+// Wrap the main component logic in a separate component to use Suspense
+function ProductsPageContent() {
+  const searchParams = useSearchParams();
+  const initialSearchQuery = searchParams.get('search') || '';
+
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ClothingItem[]>([]);
-  const [filters, setFilters] = useState<GetClothingItemsFilters>({});
+  const [filters, setFilters] = useState<GetClothingItemsFilters>({ searchQuery: initialSearchQuery });
   const [isLoadingItems, setIsLoadingItems] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [currentSearchTerm, setCurrentSearchTerm] = useState(initialSearchQuery); // Store the active search term
+
   const { toast } = useToast();
 
-  // Fetch all clothing items initially
+
+  // Fetch all clothing items initially (only needed for filter options)
   useEffect(() => {
-    const fetchAllItems = async () => {
-      console.log("[ProductsPage Effect - Fetch All] Starting initial item fetch...");
-      setIsLoadingItems(true);
-      setIsInitialLoad(true);
+    const fetchAllItemsForFilters = async () => {
+      console.log("[ProductsPage Effect - Fetch All] Starting item fetch for filter options...");
+      // No need to set loading here as the main filtering handles loading state
       try {
-        const allItems = await getClothingItems();
-        console.log(`[ProductsPage Effect - Fetch All] Fetched ${allItems.length} total items.`);
+        const allItems = await getClothingItems(); // Fetch all without filters for options
+        console.log(`[ProductsPage Effect - Fetch All] Fetched ${allItems.length} total items for filter options.`);
         setAllClothingItems(allItems);
-        setFilteredItems(allItems); // Initially display all items
       } catch (error) {
-          console.error("[ProductsPage Effect - Fetch All] Failed to fetch items:", error);
-          toast({
-            title: "Error Loading Products",
-            description: "Could not load products. Please try refreshing.",
-            variant: "destructive",
-          });
+          console.error("[ProductsPage Effect - Fetch All] Failed to fetch items for filter options:", error);
+          // Don't need toast here, main fetch will handle errors
           setAllClothingItems([]);
-          setFilteredItems([]);
       } finally {
-          console.log("[ProductsPage Effect - Fetch All] Finished initial item fetch.");
-          setIsLoadingItems(false);
-          setIsInitialLoad(false);
+          console.log("[ProductsPage Effect - Fetch All] Finished item fetch for filter options.");
+          // No need to set loading or initial load here
       }
     };
-    fetchAllItems();
-  }, [toast]);
+    fetchAllItemsForFilters();
+  }, []); // Run only once on mount
 
-  // Apply filters whenever filters change or all items are loaded (after initial load)
-  useEffect(() => {
-    if (isInitialLoad) {
-        console.log("[ProductsPage Effect - Filter] Skipping filter on initial load.");
-        return;
-    }
 
-    console.log("[ProductsPage Effect - Filter] Applying filters:", filters);
-    setIsLoadingItems(true); // Show loading state while filtering
-    const timer = setTimeout(async () => {
-       try {
-           // Fetch items based on current filters
-           const items = await getClothingItems(filters);
-           console.log(`[ProductsPage Effect - Filter] Filtering complete. Found ${items.length} items.`);
-           setFilteredItems(items);
-       } catch (error) {
-            console.error("[ProductsPage Effect - Filter] Failed to filter clothing items:", error);
-             toast({
-               title: "Error Filtering",
-               description: "Could not apply filters. Please try again.",
-               variant: "destructive",
-             });
-       } finally {
-          console.log("[ProductsPage Effect - Filter] Filter process finished.");
-          setIsLoadingItems(false); // Hide loading state after filtering
-       }
-    }, 300); // Debounce filter application slightly
+  // Apply filters (including search) whenever filters or search params change
+   useEffect(() => {
+     const searchQueryFromUrl = searchParams.get('search') || '';
+     console.log("[ProductsPage Effect - Filter] Detected URL search param:", searchQueryFromUrl);
 
-    return () => {
-        console.log("[ProductsPage Effect - Filter] Cleanup: Clearing filter timer.");
-        clearTimeout(timer);
-    }
+     // Combine URL search query with existing filters
+     const combinedFilters = { ...filters, searchQuery: searchQueryFromUrl };
+     console.log("[ProductsPage Effect - Filter] Applying combined filters:", combinedFilters);
 
-  }, [filters, allClothingItems, isInitialLoad, toast]); // Depend on filters and all items
+     setCurrentSearchTerm(searchQueryFromUrl); // Update displayed search term info
+     setIsLoadingItems(true); // Show loading state while fetching/filtering
+     setIsInitialLoad(true); // Treat filter changes like an initial load for loading state
 
-  // Handler for filter changes
+
+     const timer = setTimeout(async () => {
+        try {
+            // Fetch items based on current combined filters
+            const items = await getClothingItems(combinedFilters);
+            console.log(`[ProductsPage Effect - Filter] Filtering complete. Found ${items.length} items.`);
+            setFilteredItems(items);
+            if (items.length === 0 && combinedFilters.searchQuery) {
+                // Optionally toast if search yields no results
+                // toast({ title: "No Results", description: `No products found for "${combinedFilters.searchQuery}".` });
+            }
+        } catch (error) {
+             console.error("[ProductsPage Effect - Filter] Failed to filter clothing items:", error);
+              toast({
+                title: "Error Filtering",
+                description: "Could not apply filters. Please try again.",
+                variant: "destructive",
+              });
+              setFilteredItems([]); // Clear items on error
+        } finally {
+           console.log("[ProductsPage Effect - Filter] Filter process finished.");
+           setIsLoadingItems(false); // Hide loading state after filtering
+           setIsInitialLoad(false); // Mark load as complete
+        }
+     }, 300); // Debounce filter application slightly
+
+     return () => {
+         console.log("[ProductsPage Effect - Filter] Cleanup: Clearing filter timer.");
+         clearTimeout(timer);
+     }
+
+   }, [searchParams, filters, toast]); // Depend on searchParams and filters
+
+
+  // Handler for filter changes from FilterOptions component
   const handleFilterChange = useCallback((newFilters: GetClothingItemsFilters) => {
     console.log("[ProductsPage Handler - FilterChange] New filters received:", newFilters);
-    setFilters(newFilters);
+     // Keep the current search query from the URL when applying dropdown filters
+    setFilters(prevFilters => ({ ...newFilters, searchQuery: prevFilters.searchQuery }));
   }, []);
 
   // Calculate filter options based on all loaded items
@@ -101,7 +115,7 @@ export default function ProductsPage() {
     return { categories, sizes, colors };
   }, [allClothingItems]);
 
-  console.log("[ProductsPage Render] Rendering ProductsPage component. States:", { isLoadingItems, isInitialLoad, filters });
+  console.log("[ProductsPage Render] Rendering ProductsPageContent. States:", { isLoadingItems, isInitialLoad, filters, currentSearchTerm });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -115,14 +129,25 @@ export default function ProductsPage() {
              Explore Our Collection
            </CardTitle>
            <CardDescription className="text-lg text-muted-foreground mt-2">
-              Browse all available products and use filters to find exactly what you need.
+              Browse products or use search and filters to find exactly what you need.
            </CardDescription>
          </CardHeader>
       </Card>
 
+        {/* Display current search term if active */}
+        {currentSearchTerm && !isLoadingItems && (
+           <div className="mb-4 p-3 rounded-md bg-secondary border border-border flex items-center gap-2">
+             <SearchIcon className="h-5 w-5 text-primary" />
+              <p className="text-sm">
+                Showing results for: <span className="font-semibold">{currentSearchTerm}</span>
+              </p>
+           </div>
+        )}
+
+
       {/* Filter Options Section */}
-       {(isLoadingItems && isInitialLoad) || (allClothingItems.length === 0 && isLoadingItems) ? (
-          // Skeleton for filters while loading initially or if still loading without items
+       {(isLoadingItems && isInitialLoad && allClothingItems.length === 0) ? ( // Show skeleton only if absolutely no items loaded yet and loading
+          // Skeleton for filters while loading initially
           <div className="mb-6 space-y-4 animate-pulse">
              <div className="h-16 bg-muted rounded-lg"></div> {/* Filter card header placeholder */}
              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-muted rounded-lg">
@@ -133,14 +158,15 @@ export default function ProductsPage() {
              </div>
            </div>
        ) : (
-          // Render filters only when *not* initial load AND filter options are ready
-          !isInitialLoad && filterOptions.categories.length > 0 && (
+          // Render filters only when filter options are ready (even if items are still loading from filter change)
+           allClothingItems.length > 0 && filterOptions.categories.length > 0 && (
             <FilterOptions
                categories={filterOptions.categories}
                sizes={filterOptions.sizes}
                colors={filterOptions.colors}
                onFilterChange={handleFilterChange}
-               initialFilters={filters}
+               // Pass filters *without* the search query to the component
+               initialFilters={{ category: filters.category, size: filters.size, color: filters.color }}
              />
           )
        )}
@@ -149,19 +175,33 @@ export default function ProductsPage() {
       <ClothingList
         items={filteredItems}
         // Show loading state if initial load is happening OR if filtering is in progress
-        isLoading={isInitialLoad || isLoadingItems}
+        isLoading={isLoadingItems} // Use unified loading state
        />
 
-       {/* Message if no items found after filtering */}
-        {!isLoadingItems && filteredItems.length === 0 && allClothingItems.length > 0 && (
-         <p className="text-center text-muted-foreground py-10">No products found matching your current filters.</p>
+       {/* Message if no items found after filtering/searching */}
+        {!isLoadingItems && filteredItems.length === 0 && (
+             <p className="text-center text-muted-foreground py-10">
+                 {currentSearchTerm
+                    ? `No products found matching "${currentSearchTerm}" and your filters.`
+                    : "No products found matching your current filters."
+                  }
+             </p>
        )}
 
-        {/* Message if no items loaded initially */}
-        {!isLoadingItems && allClothingItems.length === 0 && (
+        {/* Message if no items loaded initially (should be rare now) */}
+        {!isLoadingItems && allClothingItems.length === 0 && filteredItems.length === 0 && (
             <p className="text-center text-muted-foreground py-10">There are currently no products available. Check back later!</p>
         )}
     </div>
   );
 }
 
+
+// Wrap the component needing useSearchParams with Suspense
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={<div>Loading filters...</div>}>
+            <ProductsPageContent />
+        </Suspense>
+    );
+}

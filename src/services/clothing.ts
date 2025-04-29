@@ -134,6 +134,7 @@ export interface GetClothingItemsFilters {
   color?: string;
   isOnSale?: boolean; // Added filter for sale items
   isTrending?: boolean; // Added filter for trending items
+  searchQuery?: string; // Added filter for search query
 }
 
 
@@ -150,25 +151,51 @@ export async function getClothingItems(
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 50)); // Reduced delay for faster filtering
 
+  console.log('[getClothingItems] Applying filters:', filters);
+
   let filteredItems = dummyItems;
 
+  // Apply search query filter first
+  if (filters.searchQuery) {
+    const query = filters.searchQuery.toLowerCase();
+    console.log(`[getClothingItems] Filtering by search query: "${query}"`);
+    filteredItems = filteredItems.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query)
+    );
+    console.log(`[getClothingItems] ${filteredItems.length} items after search query filter.`);
+  }
+
+
+  // Apply other filters
   if (filters.category) {
+    console.log(`[getClothingItems] Filtering by category: ${filters.category}`);
     filteredItems = filteredItems.filter(item => item.category === filters.category);
+     console.log(`[getClothingItems] ${filteredItems.length} items after category filter.`);
   }
   if (filters.size) {
+     console.log(`[getClothingItems] Filtering by size: ${filters.size}`);
     // Handle 'One Size' items correctly
     filteredItems = filteredItems.filter(item => item.sizes.includes(filters.size!) || item.sizes.includes('One Size'));
+     console.log(`[getClothingItems] ${filteredItems.length} items after size filter.`);
   }
   if (filters.color) {
+    console.log(`[getClothingItems] Filtering by color: ${filters.color}`);
     filteredItems = filteredItems.filter(item => item.colors.includes(filters.color!));
+     console.log(`[getClothingItems] ${filteredItems.length} items after color filter.`);
   }
   if (filters.isOnSale !== undefined) { // Allow explicitly filtering for non-sale items too
+     console.log(`[getClothingItems] Filtering by isOnSale: ${filters.isOnSale}`);
     filteredItems = filteredItems.filter(item => item.isOnSale === filters.isOnSale);
+     console.log(`[getClothingItems] ${filteredItems.length} items after isOnSale filter.`);
   }
-    if (filters.isTrending !== undefined) { // Allow explicitly filtering for non-trending items
+  if (filters.isTrending !== undefined) { // Allow explicitly filtering for non-trending items
+     console.log(`[getClothingItems] Filtering by isTrending: ${filters.isTrending}`);
     filteredItems = filteredItems.filter(item => item.isTrending === filters.isTrending);
+     console.log(`[getClothingItems] ${filteredItems.length} items after isTrending filter.`);
   }
 
-
+  console.log(`[getClothingItems] Final filtered items count: ${filteredItems.length}`);
   return filteredItems;
 }
