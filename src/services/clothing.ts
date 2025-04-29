@@ -50,223 +50,79 @@ export interface ClothingItem {
    isTrending?: boolean;
 }
 
-// More extensive dummy data with prices, sale items, and trending flags
-const dummyItems: ClothingItem[] = [
-  {
-    id: '1',
-    name: 'Classic White Tee',
-    description: 'A versatile and comfortable cotton t-shirt.',
-    imageUrl: 'https://picsum.photos/seed/tee/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['White', 'Black', 'Gray'],
-    category: 'T-Shirts',
-    price: 25.00,
-    isTrending: true,
-  },
-  {
-    id: '2',
-    name: 'Slim Fit Jeans',
-    description: 'Stylish dark wash slim fit jeans.',
-    imageUrl: 'https://picsum.photos/seed/jeans/400/300',
-    sizes: ['28', '30', '32', '34', '36'],
-    colors: ['Dark Wash', 'Light Wash', 'Black'],
-    category: 'Jeans',
-    price: 75.50,
-    isTrending: true,
-  },
-  {
-    id: '3',
-    name: 'Floral Sundress',
-    description: 'Light and airy floral print sundress, perfect for summer.',
-    imageUrl: 'https://picsum.photos/seed/dress/400/300',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: ['Pink Floral', 'Blue Floral', 'Yellow Floral'],
-    category: 'Dresses',
-    price: 89.99,
-    isOnSale: true,
-    salePrice: 69.99,
-    isTrending: true,
-  },
-  {
-    id: '4',
-    name: 'Cozy Knit Sweater',
-    description: 'Warm and soft knit sweater for cooler days.',
-    imageUrl: 'https://picsum.photos/seed/sweater/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Cream', 'Navy', 'Burgundy'],
-    category: 'Sweaters',
-    price: 65.00,
-  },
-   {
-    id: '5',
-    name: 'Casual Chinos',
-    description: 'Comfortable and stylish chinos for everyday wear.',
-    imageUrl: 'https://picsum.photos/seed/chinos/400/300',
-    sizes: ['30', '32', '34', '36'],
-    colors: ['Khaki', 'Olive', 'Gray'],
-    category: 'Pants',
-    price: 55.00,
-  },
-  {
-    id: '6',
-    name: 'Leather Jacket',
-    description: 'Classic biker style leather jacket.',
-    imageUrl: 'https://picsum.photos/seed/jacket/400/300',
-    sizes: ['S', 'M', 'L'],
-    colors: ['Black', 'Brown'],
-    category: 'Outerwear',
-    price: 199.99,
-    isTrending: true,
-  },
-   {
-    id: '7',
-    name: 'Striped Button-Down Shirt',
-    description: 'A sharp striped shirt for smart-casual looks.',
-    imageUrl: 'https://picsum.photos/seed/shirt/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Blue/White Stripe', 'Gray/White Stripe'],
-    category: 'Shirts',
-    price: 49.50,
-  },
-  {
-    id: '8',
-    name: 'Denim Skirt',
-    description: 'A versatile denim mini skirt.',
-    imageUrl: 'https://picsum.photos/seed/skirt/400/300',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: ['Blue Denim', 'Black Denim'],
-    category: 'Skirts',
-    price: 45.00,
-    isOnSale: true,
-    salePrice: 35.00,
-  },
-   {
-    id: '9',
-    name: 'Graphic Hoodie',
-    description: 'Comfortable hoodie with a cool graphic print.',
-    imageUrl: 'https://picsum.photos/seed/hoodie/400/300',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-    colors: ['Black', 'Heather Gray', 'Navy'],
-    category: 'Sweaters', // Or could be Outerwear depending on classification
-    price: 68.00,
-  },
-   {
-    id: '10',
-    name: 'Maxi Dress',
-    description: 'Elegant flowing maxi dress for special occasions.',
-    imageUrl: 'https://picsum.photos/seed/maxidress/400/300',
-    sizes: ['S', 'M', 'L'],
-    colors: ['Emerald Green', 'Deep Red', 'Navy Blue'],
-    category: 'Dresses',
-    price: 120.00,
-  },
-   {
-    id: '11',
-    name: 'Bomber Jacket',
-    description: 'A trendy lightweight bomber jacket.',
-    imageUrl: 'https://picsum.photos/seed/bomber/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Olive Green', 'Black', 'Maroon'],
-    category: 'Outerwear',
-    price: 95.00,
-    isTrending: true,
-  },
-   {
-    id: '12',
-    name: 'Polo Shirt',
-    description: 'Classic polo shirt for a preppy look.',
-    imageUrl: 'https://picsum.photos/seed/polo/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['White', 'Navy', 'Red', 'Green'],
-    category: 'Shirts',
-    price: 39.95,
-    isOnSale: true,
-    salePrice: 29.95,
-  },
-  {
-    id: '13',
-    name: 'Pleated Midi Skirt',
-    description: 'Elegant pleated midi skirt for a sophisticated look.',
-    imageUrl: 'https://picsum.photos/seed/midiskirt/400/300',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: ['Blush Pink', 'Black', 'Forest Green'],
-    category: 'Skirts',
-    price: 62.00,
-  },
-   {
-    id: '14',
-    name: 'Linen Blend Trousers',
-    description: 'Lightweight and breathable linen blend trousers.',
-    imageUrl: 'https://picsum.photos/seed/linentrousers/400/300',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Beige', 'White', 'Light Blue'],
-    category: 'Pants',
-    price: 69.00,
-  },
-  {
-    id: '15',
-    name: 'Cashmere Scarf',
-    description: 'Luxuriously soft cashmere scarf.',
-    imageUrl: 'https://picsum.photos/seed/scarf/400/300',
-    sizes: ['One Size'],
-    colors: ['Camel', 'Charcoal Gray', 'Light Pink'],
-    category: 'Accessories',
-    price: 85.00,
-  },
-  {
-    id: '16',
-    name: 'V-Neck Blouse',
-    description: 'A flattering V-neck blouse, easy to dress up or down.',
-    imageUrl: 'https://picsum.photos/seed/blouse/400/300',
-    sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    colors: ['Ivory', 'Black', 'Dusty Rose'],
-    category: 'Shirts',
-    price: 48.00,
-  },
-   {
-    id: '17',
-    name: 'Wool Blend Coat',
-    description: 'A warm and stylish wool blend coat for winter.',
-    imageUrl: 'https://picsum.photos/seed/coat/400/300',
-    sizes: ['S', 'M', 'L'],
-    colors: ['Camel', 'Gray', 'Black'],
-    category: 'Outerwear',
-    price: 250.00,
-    isOnSale: true,
-    salePrice: 199.99,
-  },
-   {
-    id: '18',
-    name: 'Canvas Tote Bag',
-    description: 'Durable and spacious canvas tote bag.',
-    imageUrl: 'https://picsum.photos/seed/totebag/400/300',
-    sizes: ['One Size'],
-    colors: ['Natural', 'Navy Stripe', 'Black'],
-    category: 'Accessories',
-    price: 35.00,
-  },
-   {
-    id: '19',
-    name: 'High-Waisted Shorts',
-    description: 'Comfortable high-waisted shorts for warm weather.',
-    imageUrl: 'https://picsum.photos/seed/shorts/400/300',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: ['Denim Blue', 'White', 'Khaki'],
-    category: 'Shorts',
-    price: 42.00,
-  },
-  {
-    id: '20',
-    name: 'Silk Camisole',
-    description: 'A luxurious silk camisole top.',
-    imageUrl: 'https://picsum.photos/seed/camisole/400/300',
-    sizes: ['S', 'M', 'L'],
-    colors: ['Champagne', 'Black', 'Silver'],
-    category: 'Tops', // Could also be T-Shirts or Shirts depending on taxonomy
-    price: 58.00,
-    isTrending: true,
-  }
+// Generate 200 dummy items
+const categories = ['T-Shirts', 'Jeans', 'Dresses', 'Sweaters', 'Pants', 'Outerwear', 'Shirts', 'Skirts', 'Accessories', 'Shorts', 'Tops', 'Shoes', 'Bags'];
+const sizes = [['S', 'M', 'L', 'XL'], ['XS', 'S', 'M'], ['28', '30', '32', '34', '36'], ['One Size'], ['6', '7', '8', '9', '10']];
+const colors = [
+    ['White', 'Black', 'Gray'], ['Dark Wash', 'Light Wash', 'Black'], ['Pink Floral', 'Blue Floral', 'Yellow Floral'],
+    ['Cream', 'Navy', 'Burgundy'], ['Khaki', 'Olive', 'Gray'], ['Black', 'Brown'], ['Blue/White Stripe', 'Gray/White Stripe'],
+    ['Blue Denim', 'Black Denim'], ['Black', 'Heather Gray', 'Navy'], ['Emerald Green', 'Deep Red', 'Navy Blue'],
+    ['Olive Green', 'Black', 'Maroon'], ['White', 'Navy', 'Red', 'Green'], ['Blush Pink', 'Black', 'Forest Green'],
+    ['Beige', 'White', 'Light Blue'], ['Camel', 'Charcoal Gray', 'Light Pink'], ['Ivory', 'Black', 'Dusty Rose'],
+    ['Natural', 'Navy Stripe', 'Black'], ['Denim Blue', 'White', 'Khaki'], ['Champagne', 'Black', 'Silver']
 ];
+const namePrefixes = ['Classic', 'Modern', 'Vintage', 'Essential', 'Stylish', 'Comfortable', 'Elegant', 'Casual', 'Formal', 'Urban', 'Retro', 'Minimalist'];
+const nameSuffixes = ['Tee', 'Jeans', 'Dress', 'Sweater', 'Pants', 'Jacket', 'Shirt', 'Skirt', 'Scarf', 'Shorts', 'Top', 'Blouse', 'Coat', 'Bag', 'Sneakers', 'Boots', 'Sandals', 'Hat'];
+const descriptions = [
+    'A versatile addition to your wardrobe.', 'Perfect for any occasion.', 'Made with high-quality materials.',
+    'Designed for comfort and style.', 'A must-have fashion staple.', 'Elevate your look with this piece.',
+    'Timeless design, modern fit.', 'Effortlessly chic and comfortable.', 'Stay warm and stylish.', 'Lightweight and breathable fabric.'
+];
+
+const generateDummyItems = (count: number): ClothingItem[] => {
+    const items: ClothingItem[] = [];
+    const usedIds = new Set<string>();
+
+    for (let i = 1; i <= count; i++) {
+        let id = String(i);
+        while (usedIds.has(id)) {
+            id = String(Math.floor(Math.random() * 10000) + count); // Ensure uniqueness if count overlaps initial IDs
+        }
+        usedIds.add(id);
+
+        const category = categories[Math.floor(Math.random() * categories.length)];
+        const prefix = namePrefixes[Math.floor(Math.random() * namePrefixes.length)];
+        let suffix = nameSuffixes[Math.floor(Math.random() * nameSuffixes.length)];
+        // Try to match suffix to category for more realism
+        if (category === 'T-Shirts' || category === 'Tops') suffix = 'Tee';
+        if (category === 'Jeans' || category === 'Pants' || category === 'Shorts') suffix = category.slice(0, -1); // Jeans, Pant, Short
+        if (category === 'Dresses') suffix = 'Dress';
+        if (category === 'Sweaters') suffix = 'Sweater';
+        if (category === 'Outerwear') suffix = ['Jacket', 'Coat', 'Bomber'][Math.floor(Math.random() * 3)];
+        if (category === 'Shirts') suffix = ['Shirt', 'Blouse', 'Polo'][Math.floor(Math.random() * 3)];
+        if (category === 'Skirts') suffix = 'Skirt';
+        if (category === 'Accessories') suffix = ['Scarf', 'Hat', 'Bag'][Math.floor(Math.random() * 3)];
+        if (category === 'Shoes') suffix = ['Sneakers', 'Boots', 'Sandals'][Math.floor(Math.random() * 3)];
+
+
+        const name = `${prefix} ${suffix}`;
+        const description = descriptions[Math.floor(Math.random() * descriptions.length)] + ` Style: ${name}.`;
+        const itemSizes = sizes[Math.floor(Math.random() * sizes.length)];
+        const itemColors = colors[Math.floor(Math.random() * colors.length)];
+        const price = parseFloat((Math.random() * 180 + 20).toFixed(2)); // Price between 20 and 200
+        const isOnSale = Math.random() < 0.2; // 20% chance of being on sale
+        const salePrice = isOnSale ? parseFloat((price * (Math.random() * 0.4 + 0.5)).toFixed(2)) : undefined; // Sale price 50-90% of original
+        const isTrending = Math.random() < 0.15; // 15% chance of being trending
+
+        items.push({
+            id,
+            name,
+            description,
+            imageUrl: `https://picsum.photos/seed/${id}/400/300`,
+            sizes: itemSizes,
+            colors: itemColors,
+            category,
+            price,
+            isOnSale,
+            salePrice,
+            isTrending,
+        });
+    }
+    return items;
+};
+
+
+const dummyItems: ClothingItem[] = generateDummyItems(200);
 
 
 /**
@@ -292,7 +148,7 @@ export async function getClothingItems(
   filters: GetClothingItemsFilters = {}
 ): Promise<ClothingItem[]> {
   // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 50)); // Reduced delay for faster filtering
 
   let filteredItems = dummyItems;
 
@@ -306,11 +162,11 @@ export async function getClothingItems(
   if (filters.color) {
     filteredItems = filteredItems.filter(item => item.colors.includes(filters.color!));
   }
-  if (filters.isOnSale) {
-    filteredItems = filteredItems.filter(item => item.isOnSale === true);
+  if (filters.isOnSale !== undefined) { // Allow explicitly filtering for non-sale items too
+    filteredItems = filteredItems.filter(item => item.isOnSale === filters.isOnSale);
   }
-    if (filters.isTrending) {
-    filteredItems = filteredItems.filter(item => item.isTrending === true);
+    if (filters.isTrending !== undefined) { // Allow explicitly filtering for non-trending items
+    filteredItems = filteredItems.filter(item => item.isTrending === filters.isTrending);
   }
 
 

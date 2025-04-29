@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getClothingItems, ClothingItem, GetClothingItemsFilters } from '@/services/clothing';
-import { recommendOutfit, RecommendOutfitInput, RecommendOutfitOutput } from '@/ai/flows/outfit-recommendation';
+// Removed AI flow import: import { recommendOutfit, RecommendOutfitInput, RecommendOutfitOutput } from '@/ai/flows/outfit-recommendation';
 import { ClothingList } from '@/components/clothing-list';
 import { FilterOptions } from '@/components/filter-options';
 import { OutfitRecommendations } from '@/components/outfit-recommendations';
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Flame, Sparkles, Tags, Loader2, Wand2 } from 'lucide-react'; // Import icons
+import { Flame, Sparkles, Tags, Loader2, Wand2, Shuffle } from 'lucide-react'; // Import icons, Added Shuffle
 
 
 export default function Home() {
@@ -23,10 +23,10 @@ export default function Home() {
   const [trendingItems, setTrendingItems] = useState<ClothingItem[]>([]);
   const [newArrivals, setNewArrivals] = useState<ClothingItem[]>([]);
   const [filters, setFilters] = useState<GetClothingItemsFilters>({});
-  // State specifically for AI recommendations generated via button click
-  const [generatedOutfit, setGeneratedOutfit] = useState<RecommendOutfitOutput | null>(null);
+  // State for randomly generated outfit items
+  const [randomOutfitItems, setRandomOutfitItems] = useState<ClothingItem[] | null>(null); // Renamed state and changed type
   const [isLoadingItems, setIsLoadingItems] = useState(true);
-  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false); // Renamed for clarity
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false); // Keep this for the button loading state
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
   const [isLoadingNewArrivals, setIsLoadingNewArrivals] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -55,7 +55,7 @@ export default function Home() {
 
         // Fetch new arrivals (simulate by taking last 5 added items - adjust logic as needed)
         // Ensure we don't take more than available if total items < 5
-        const arrivals = allItems.slice(Math.max(0, allItems.length - 5));
+        const arrivals = allItems.slice(-Math.min(5, allItems.length)); // Use slice(-limit) for last N items
         console.log(`[Page Effect - Fetch All] Determined ${arrivals.length} new arrivals.`);
         setNewArrivals(arrivals);
 
@@ -125,69 +125,50 @@ export default function Home() {
   }, []);
 
 
-   // Handler for the "Generate Outfit Suggestion" button click
-    const handleGenerateOutfit = useCallback(async () => {
+   // Handler for the "Generate Random Outfit" button click
+    const handleGenerateRandomOutfit = useCallback(async () => {
       const generationStartTime = Date.now();
-      console.log(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Button clicked. Starting outfit generation...`);
+      console.log(`[Page Handler - GenerateRandomOutfit @ ${generationStartTime}] Button clicked. Starting random outfit generation...`);
       setIsLoadingRecommendations(true);
-      setGeneratedOutfit(null); // Clear previous results
+      setRandomOutfitItems(null); // Clear previous results
 
-      if (allClothingItems.length < 2) { // Need at least 2 items to form an outfit
-         console.error(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Error: Cannot generate outfit, not enough items available (${allClothingItems.length}).`);
-         toast({ title: 'Error', description: 'Not enough products loaded yet to generate an outfit. Please wait or refresh.', variant: 'destructive' });
+      if (allClothingItems.length < 3) { // Need at least 3 items to pick randomly
+         console.error(`[Page Handler - GenerateRandomOutfit @ ${generationStartTime}] Error: Cannot generate outfit, not enough items available (${allClothingItems.length}).`);
+         toast({ title: 'Error', description: 'Not enough products loaded yet to generate an outfit (need 3+). Please wait or refresh.', variant: 'destructive' });
          setIsLoadingRecommendations(false);
          return;
       }
 
       try {
-        const allAvailableItemIds = allClothingItems.map(item => item.id);
-        console.log(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Total available item IDs for AI: ${allAvailableItemIds.length}`);
+           // Simulate short delay for UX
+           await new Promise(resolve => setTimeout(resolve, 300));
 
-         // Prepare input for the AI flow
-         const input: RecommendOutfitInput = {
-             availableItemIds: allAvailableItemIds,
-             // stylePreferences: "casual chic" // Example: Add if you implement preferences
-         };
+           // Select 3 random distinct items
+           const shuffled = [...allClothingItems].sort(() => 0.5 - Math.random());
+           const selectedItems = shuffled.slice(0, 3);
 
-          console.log(`[Page Handler - GenerateOutfit @ ${generationStartTime}] Calling recommendOutfit AI flow with input...`); // Removed input logging for brevity
-          const result = await recommendOutfit(input);
-          const generationEndTime = Date.now();
-          console.log(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Received AI recommendations result (took ${generationEndTime - generationStartTime}ms):`, JSON.stringify(result, null, 2));
+           const generationEndTime = Date.now();
+           console.log(`[Page Handler - GenerateRandomOutfit @ ${generationEndTime}] Random selection complete (took ${generationEndTime - generationStartTime}ms). Selected IDs:`, selectedItems.map(i => i.id).join(', '));
 
-           // --- Set State and Show Toast Based on Result ---
-           setGeneratedOutfit(result); // Set the result regardless of success/failure, the component handles display
+           setRandomOutfitItems(selectedItems); // Set the selected items
 
-           if (result && result.recommendations && result.recommendations.length >= 2) {
-               // Success case: We have at least 2 valid recommendations
-               console.log(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Generation successful. Setting generatedOutfit state with ${result.recommendations.length} items.`);
-               toast({
-                   title: 'Outfit Suggestion Ready!',
-                   description: result.outfitReason || 'AI has generated an outfit for you.', // Show AI reason or default
-                });
-           } else {
-               // Failure case: Less than 2 recommendations, or other error indicated by outfitReason
-                console.warn(`[Page Handler - GenerateOutfit @ ${generationEndTime}] Generation failed or resulted in less than 2 valid items. Result:`, result);
-                 toast({
-                   title: 'Generation Issue',
-                   // Use the reason from the AI response if available, otherwise provide a generic message
-                   description: result?.outfitReason || 'Could not generate a valid outfit suggestion at this time. Please try again.',
-                   variant: 'destructive', // Use destructive variant for errors/issues
-                });
-           }
+           toast({
+               title: 'Random Outfit Suggestion Ready!',
+               description: 'Here are 3 randomly selected items.',
+           });
 
       } catch (error) {
         const errorTime = Date.now();
-        console.error(`[Page Handler - GenerateOutfit @ ${errorTime}] CRITICAL ERROR generating outfit:`, error);
+        console.error(`[Page Handler - GenerateRandomOutfit @ ${errorTime}] CRITICAL ERROR generating random outfit:`, error);
          toast({
             title: 'Generation Error',
-            description: 'An unexpected error occurred while generating the outfit suggestion.',
+            description: 'An unexpected error occurred while selecting random items.',
             variant: 'destructive',
           });
-         // Set an error state in generatedOutfit to be displayed by the component
-         setGeneratedOutfit({ recommendations: [], outfitReason: "An unexpected error occurred during generation." });
+         setRandomOutfitItems([]); // Set empty array on error
       } finally {
         const finallyTime = Date.now();
-        console.log(`[Page Handler - GenerateOutfit @ ${finallyTime}] Finished outfit generation process. Setting isLoadingRecommendations to false.`);
+        console.log(`[Page Handler - GenerateRandomOutfit @ ${finallyTime}] Finished random outfit generation process. Setting isLoadingRecommendations to false.`);
         setIsLoadingRecommendations(false);
       }
     }, [allClothingItems, toast]);
@@ -207,7 +188,7 @@ export default function Home() {
     return { categories, sizes, colors };
   }, [allClothingItems]);
 
-  console.log("[Page Render] Rendering Home component. States:", { isLoadingItems, isLoadingRecommendations, isLoadingTrending, isLoadingNewArrivals, isInitialLoad, generatedOutfitCount: generatedOutfit?.recommendations?.length ?? 0 });
+  console.log("[Page Render] Rendering Home component. States:", { isLoadingItems, isLoadingRecommendations, isLoadingTrending, isLoadingNewArrivals, isInitialLoad, randomOutfitItemsCount: randomOutfitItems?.length ?? 0 });
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
@@ -223,7 +204,7 @@ export default function Home() {
          </CardHeader>
          <CardContent className="pb-8 md:pb-12">
            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-             Explore our curated collection of modern fashion essentials. Use our AI-powered assistant to find the perfect outfit combinations, discover trending styles, and shop our latest arrivals.
+             Explore our curated collection of modern fashion essentials. Get inspired with random outfit suggestions, discover trending styles, and shop our latest arrivals.
            </p>
             <div className="flex flex-wrap justify-center gap-4">
                  <Button asChild size="lg">
@@ -239,17 +220,17 @@ export default function Home() {
        </Card>
 
 
-        {/* AI Outfit Generation Button & Recommendations Section */}
+        {/* Random Outfit Generation Button & Recommendations Section */}
         <section>
             <Card className="mt-8 shadow-md bg-primary/5 border-primary/30">
                  <CardHeader>
                    <CardTitle className="text-xl font-semibold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-primary">
                       <div className='flex items-center gap-2'>
-                          <Wand2 className="h-6 w-6" /> AI Outfit Suggestion
+                          <Shuffle className="h-6 w-6" /> Random Outfit Suggestion {/* Changed icon */}
                       </div>
                        <Button
-                          onClick={handleGenerateOutfit}
-                          disabled={isLoadingRecommendations || allClothingItems.length < 2} // Disable if loading or not enough items loaded
+                          onClick={handleGenerateRandomOutfit} // Updated handler
+                          disabled={isLoadingRecommendations || allClothingItems.length < 3} // Disable if loading or not enough items loaded
                           className="mt-2 sm:mt-0"
                         >
                           {isLoadingRecommendations ? (
@@ -258,20 +239,20 @@ export default function Home() {
                               </>
                           ) : (
                               <>
-                                <Wand2 className="mr-2 h-4 w-4" /> Generate New Outfit
+                                <Shuffle className="mr-2 h-4 w-4" /> Get Random Outfit {/* Changed icon & text */}
                               </>
                           )}
                        </Button>
                    </CardTitle>
-                   <CardDescription>Click the button to get a complete outfit suggestion generated by AI from our entire collection.</CardDescription>
+                   <CardDescription>Click the button to get a random selection of 3 items from our collection for inspiration.</CardDescription>
                  </CardHeader>
                  <CardContent>
-                     {/* Render the OutfitRecommendations component */}
+                     {/* Pass the random outfit items to the component */}
                      <OutfitRecommendations
-                       recommendations={generatedOutfit} // Pass the generated outfit state
-                       clothingData={allClothingItems} // Pass all items for lookup
+                       recommendedItems={randomOutfitItems} // Pass the randomly selected items
                        isLoading={isLoadingRecommendations} // Pass the specific loading state
                        isGeneratedOutfit={true} // Indicate this is from the button click
+                       // No longer need clothingData here as items are passed directly
                      />
                  </CardContent>
              </Card>
