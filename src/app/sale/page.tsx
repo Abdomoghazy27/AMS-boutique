@@ -16,9 +16,7 @@ export default function SalePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial load specifically for sale items
   const { toast } = useToast();
-    // Recommendation state (optional on sale page, pass if needed)
-  const [recommendationInputItems, setRecommendationInputItems] = useState<string[]>([]);
-
+  // Removed recommendation state
 
   // Fetch initial sale items
   useEffect(() => {
@@ -95,16 +93,7 @@ export default function SalePage() {
         setFilters({ ...newFilters, isOnSale: true });
     }, []);
 
-    // Dummy handler for recommendation toggle if needed on this page
-    const handleToggleOutfitRecs = useCallback((item: ClothingItem) => {
-      console.log(`[SalePage Handler - ToggleRecs] Toggling item: ${item.id} (${item.name})`);
-      // Implement actual logic if recommendations are active on the sale page
-      // This might involve updating `recommendationInputItems` state
-       toast({
-          title: 'Consideration Toggle',
-          description: `Toggled ${item.name} for recommendations (functionality optional on this page).`,
-        });
-    }, [toast]);
+    // Removed recommendation toggle handler
 
 
    // Prepare filter options based ONLY on the available sale items
@@ -147,8 +136,6 @@ export default function SalePage() {
       <ClothingList
         items={filteredSaleItems}
         isLoading={isLoading}
-        onToggleForRecommendations={handleToggleOutfitRecs} // Pass handler
-        recommendationInputItemIds={recommendationInputItems} // Pass state
        />
 
        {/* Message if no sale items found after filtering */}

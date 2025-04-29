@@ -7,17 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 interface TrendingProductsProps {
   items: ClothingItem[];
   isLoading?: boolean;
-   // Pass down recommendation handlers if needed
-   onToggleForRecommendations?: (item: ClothingItem) => void;
-   recommendationInputItemIds?: string[];
+  // Removed recommendation-related props
 }
 
-export function TrendingProducts({
-    items,
-    isLoading = false,
-    onToggleForRecommendations,
-    recommendationInputItemIds = []
-}: TrendingProductsProps) {
+export function TrendingProducts({ items, isLoading = false }: TrendingProductsProps) {
 
   if (isLoading) {
     return (
@@ -53,8 +46,7 @@ export function TrendingProducts({
           <div key={item.id} className="w-[280px] flex-shrink-0"> {/* Fixed width for cards */}
             <ClothingItemCard
               item={item}
-              onToggleForRecommendations={onToggleForRecommendations}
-              isSelectedForRecommendations={recommendationInputItemIds.includes(item.id)}
+              // Removed recommendation-related props
             />
           </div>
         ))}

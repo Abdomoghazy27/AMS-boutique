@@ -7,17 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 interface NewArrivalsProps {
   items: ClothingItem[];
   isLoading?: boolean;
-  // Pass down recommendation handlers if needed
-   onToggleForRecommendations?: (item: ClothingItem) => void;
-   recommendationInputItemIds?: string[];
+  // Removed recommendation-related props
 }
 
-export function NewArrivals({
-    items,
-    isLoading = false,
-    onToggleForRecommendations,
-    recommendationInputItemIds = []
-}: NewArrivalsProps) {
+export function NewArrivals({ items, isLoading = false }: NewArrivalsProps) {
 
   if (isLoading) {
      return (
@@ -52,8 +45,7 @@ export function NewArrivals({
         <ClothingItemCard
           key={item.id}
           item={item}
-          onToggleForRecommendations={onToggleForRecommendations}
-          isSelectedForRecommendations={recommendationInputItemIds.includes(item.id)}
+          // Removed recommendation-related props
         />
       ))}
     </div>

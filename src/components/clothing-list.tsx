@@ -1,16 +1,14 @@
+
 import type { ClothingItem } from '@/services/clothing';
 import { ClothingItemCard } from '@/components/clothing-item-card';
 
 interface ClothingListProps {
   items: ClothingItem[];
   isLoading?: boolean;
-  // Handler to toggle an item's inclusion in the recommendation input
-  onToggleForRecommendations: (item: ClothingItem) => void;
-  // IDs of items currently selected for recommendations (to update card state)
-  recommendationInputItemIds: string[];
+  // Removed recommendation-related props
 }
 
-export function ClothingList({ items, isLoading = false, onToggleForRecommendations, recommendationInputItemIds }: ClothingListProps) {
+export function ClothingList({ items, isLoading = false }: ClothingListProps) {
 
    if (isLoading) {
     // Display skeletons while loading
@@ -29,8 +27,8 @@ export function ClothingList({ items, isLoading = false, onToggleForRecommendati
                  <div className="h-10 bg-muted rounded w-1/2"></div>
                </div>
                <div className="flex justify-between items-center mt-2"> {/* Buttons Placeholder */}
-                <div className="h-10 bg-muted rounded w-2/5"></div> {/* Add to Cart */}
-                <div className="h-8 bg-muted rounded w-2/5"></div> {/* Consider for Recs */}
+                <div className="h-10 bg-muted rounded w-3/5"></div> {/* Add to Cart */}
+                {/* Removed placeholder for consider button */}
               </div>
 
           </div>
@@ -50,10 +48,7 @@ export function ClothingList({ items, isLoading = false, onToggleForRecommendati
         <ClothingItemCard
           key={item.id}
           item={item}
-          // Pass the toggle handler down to the card
-          onToggleForRecommendations={onToggleForRecommendations}
-          // Let the card know if it's currently selected for recommendations
-          isSelectedForRecommendations={recommendationInputItemIds.includes(item.id)}
+          // Removed recommendation-related props passed down
         />
       ))}
     </div>
