@@ -118,16 +118,19 @@ const recommendOutfitFlow = ai.defineFlow<
       console.log(`[recommendOutfitFlow @ ${callEndTime}] Raw AI Response Output (took ${callEndTime - callStartTime}ms):`, JSON.stringify(output, null, 2));
     } catch (aiError: any) {
         const errorTime = Date.now();
-        console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call:`, aiError.message || aiError, aiError.stack);
-         return { recommendations: [], outfitReason: `AI Generation Error: ${aiError.message || 'Failed to communicate with the AI model.'}` };
+         // Log detailed error information if possible
+        console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call. Message: ${aiError?.message}. Details:`, aiError);
+         return { recommendations: [], outfitReason: `AI Generation Error: ${aiError?.message || 'Failed to get a valid response from the AI model.'}` };
     }
 
 
     // --- Post-processing and Validation ---
     if (!output || !output.recommendations || !Array.isArray(output.recommendations)) {
       const warnTime = Date.now();
-      console.warn(`[recommendOutfitFlow @ ${warnTime}] AI did not return a valid 'recommendations' array structure or returned null/undefined. Raw output:`, JSON.stringify(output, null, 2));
-      return { recommendations: [], outfitReason: "AI Response Error: The generated response was not in the expected format." };
+      // Add logging for the raw response from the AI before it's processed
+      console.warn(`[recommendOutfitFlow @ ${warnTime}] AI response issue: Invalid 'recommendations' structure or null/undefined output. Raw response object:`, response?.response()); // Log raw response if available
+      console.warn(`[recommendOutfitFlow @ ${warnTime}] Parsed output object:`, JSON.stringify(output, null, 2));
+      return { recommendations: [], outfitReason: "AI Response Error: The format of the generated response was unexpected." };
     }
 
      if (output.recommendations.length < 2) {
@@ -238,9 +241,10 @@ export async function recommendOutfit(input: RecommendOutfitInput): Promise<Reco
 
    } catch (error: any) {
         const errorTime = Date.now();
-        console.error(`[recommendOutfit Wrapper @ ${errorTime}] CRITICAL ERROR executing recommendOutfit flow:`, error.message || error, error.stack);
-        // Return empty structure on error with a generic message
-         return { recommendations: [], outfitReason: "An unexpected error occurred while generating the outfit suggestion. Please try again later." };
+        // Log the specific error encountered in the wrapper's catch block
+        console.error(`[recommendOutfit Wrapper @ ${errorTime}] CRITICAL ERROR executing recommendOutfit flow: Message: ${error?.message}. Details:`, error);
+        // Return empty structure on error with a specific message pointing to logs
+         return { recommendations: [], outfitReason: `An unexpected error occurred. Check server logs for details. (Error: ${error?.message || 'Unknown'})` };
    }
 }
 
@@ -271,3 +275,4 @@ const dummyItems = [
 
 // Add a type definition for the dummy data structure if needed elsewhere
 export type DummyItem = typeof dummyItems[0];
+
