@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
-import { Truck, PackageReturn, ShieldCheck } from 'lucide-react';
+import { Truck, Package, ShieldCheck } from 'lucide-react'; // Replaced PackageReturn with Package
 
 export default function PolicyPage() {
   return (
@@ -48,7 +48,7 @@ export default function PolicyPage() {
             <AccordionItem value="returns">
               <AccordionTrigger className="text-xl font-semibold text-primary hover:no-underline">
                 <div className="flex items-center gap-3">
-                   <PackageReturn className="h-6 w-6" />
+                   <Package className="h-6 w-6" /> {/* Use Package icon */}
                    Return & Exchange Policy
                  </div>
               </AccordionTrigger>
