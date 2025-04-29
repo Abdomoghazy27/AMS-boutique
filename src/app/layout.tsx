@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full"> {/* Ensure html takes full height */}
+    <html lang="en" className="h-full">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}> {/* Flex column layout */}
         <CartProvider> {/* Wrap with CartProvider */}
           <Header />
