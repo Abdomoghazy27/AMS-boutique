@@ -1,6 +1,6 @@
 
 import Link from 'next/link'; // Import Link
-import { ShoppingBag, Tags, User, Settings, Search } from 'lucide-react'; // Added Settings, Search icons
+import { ShoppingBag, Tags, User, Settings, Search } from 'lucide-react'; // Added Search icon
 import { CartIcon } from './cart-icon'; // Import CartIcon
 import { Button } from './ui/button'; // Import Button for styling links
 import { SearchBar } from './search-bar'; // Import SearchBar
@@ -39,7 +39,13 @@ export function Header() {
             <SearchBar />
          </div>
 
-        <div className="flex items-center gap-2"> {/* Container for icons/actions */}
+        <div className="flex items-center gap-1"> {/* Reduced gap for icons */}
+           {/* Search Icon (visible on smaller screens where search bar is hidden) */}
+           <Button variant="ghost" size="icon" asChild className="lg:hidden">
+             <Link href="/search" aria-label="Search Products">
+                <Search className="h-5 w-5" />
+             </Link>
+           </Button>
            {/* Settings Icon */}
            <Button variant="ghost" size="icon" asChild>
              <Link href="/settings" aria-label="View Settings">
@@ -63,7 +69,7 @@ export function Header() {
                <SearchBar />
            </div>
            {/* Mobile Nav Links */}
-           <nav className="flex justify-center items-center gap-2 py-2 overflow-x-auto"> {/* Make mobile nav scrollable */}
+           <nav className="flex justify-center items-center gap-1 py-2 overflow-x-auto text-sm"> {/* Reduced gap, smaller text */}
                <Button variant="link" size="sm" asChild>
                   <Link href="/">Home</Link>
                </Button>
@@ -78,18 +84,7 @@ export function Header() {
                     <Tags className="mr-1 h-4 w-4" /> Sale
                   </Link>
                </Button>
-               {/* Add Settings link for mobile */}
-               <Button variant="link" size="sm" asChild>
-                 <Link href="/settings">
-                   <Settings className="mr-1 h-4 w-4" /> Settings
-                 </Link>
-               </Button>
-               {/* Add Profile link for mobile */}
-                <Button variant="link" size="sm" asChild>
-                  <Link href="/profile">
-                     <User className="mr-1 h-4 w-4" /> Profile
-                  </Link>
-                </Button>
+               {/* Removed Settings/Profile links from mobile nav as they are icons now */}
            </nav>
        </div>
     </header>
