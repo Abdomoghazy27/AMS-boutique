@@ -138,8 +138,8 @@ const recommendOutfitFlow = ai.defineFlow<
              } catch (logError) {
                  console.error(`[recommendOutfitFlow @ ${errorTime}] Failed to log raw response content:`, logError);
              }
-
-            throw new Error("Invalid response structure from AI model - output() method missing or response is invalid.");
+             // Throw a specific error that will be caught by the catch block below
+             throw new Error("Invalid response structure from AI model - output() method missing or response is invalid.");
         }
 
         // If the structure seems valid, proceed to get the output
@@ -152,6 +152,7 @@ const recommendOutfitFlow = ai.defineFlow<
              const errorTime = Date.now();
              console.warn(`[recommendOutfitFlow @ ${errorTime}] AI response issue: Output() returned null/undefined after parsing.`);
               try {
+                 // Log raw response if available
                  const rawContent = response?.response && typeof response.response === 'function' ? await response.response() : response;
                  console.warn(`[recommendOutfitFlow @ ${errorTime}] Raw response object that led to null/undefined output:`, JSON.stringify(rawContent, null, 2));
               } catch (logError) {
@@ -165,7 +166,7 @@ const recommendOutfitFlow = ai.defineFlow<
          // Log detailed error information if possible
         console.error(`[recommendOutfitFlow @ ${errorTime}] CRITICAL ERROR during AI prompt call or response processing. Message: ${aiError?.message}. Details:`, aiError);
          // Log raw response if available and error wasn't due to invalid response structure itself
-         if (response && !aiError.message.includes('Invalid response structure')) {
+         if (response && !(aiError instanceof Error && aiError.message.includes('Invalid response structure'))) {
              try {
                  const rawContent = response?.response && typeof response.response === 'function' ? await response.response() : response;
                  console.error(`[recommendOutfitFlow @ ${errorTime}] Raw AI Response leading to error:`, JSON.stringify(rawContent, null, 2));
@@ -351,3 +352,4 @@ export type DummyItem = typeof dummyItems[0];
 
 
     
+
