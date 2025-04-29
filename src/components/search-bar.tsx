@@ -2,23 +2,26 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Use next/navigation for App Router
+import { useRouter } from 'next/navigation'; // Keep router for potential future use, but remove push
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
 
 export function SearchBar() {
   const [searchTerm, setSearchTerm] = useState('');
-  const router = useRouter();
+  // const router = useRouter(); // Keep router instance if needed later, but don't use push
 
   const handleSearch = (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault(); // Prevent form submission if used in a form
     const trimmedSearchTerm = searchTerm.trim();
     if (trimmedSearchTerm) {
-      // Navigate to a search results page (e.g., /search?q=...)
-      console.log(`Searching for: ${trimmedSearchTerm}`);
-      router.push(`/search?q=${encodeURIComponent(trimmedSearchTerm)}`); // Navigate to search page
-      setSearchTerm(''); // Optional: Clear search bar after search
+      // TODO: Implement search filtering on the current page or via global state
+      // Currently, just logs the search term.
+      console.log(`Search submitted for: ${trimmedSearchTerm}`);
+      // router.push(`/search?q=${encodeURIComponent(trimmedSearchTerm)}`); // Removed navigation
+      // setSearchTerm(''); // Keep term in bar for user reference? Or clear? Keep for now.
+    } else {
+        console.log("Search submitted with empty query.");
     }
   };
 

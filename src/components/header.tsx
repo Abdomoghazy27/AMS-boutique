@@ -40,11 +40,9 @@ export function Header() {
          </div>
 
         <div className="flex items-center gap-1"> {/* Reduced gap for icons */}
-           {/* Search Icon (visible on smaller screens where search bar is hidden) */}
-           <Button variant="ghost" size="icon" asChild className="lg:hidden">
-             <Link href="/search" aria-label="Search Products">
-                <Search className="h-5 w-5" />
-             </Link>
+           {/* Search Icon (visible on smaller screens where search bar is hidden) - Now just an icon, no link */}
+           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Search Products (Use input below)">
+             <Search className="h-5 w-5" />
            </Button>
            {/* Settings Icon */}
            <Button variant="ghost" size="icon" asChild>
