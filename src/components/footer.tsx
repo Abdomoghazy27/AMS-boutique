@@ -48,8 +48,9 @@ export function Footer() {
 
         <Separator className="mb-6" />
 
-        <div className="text-center text-xs">
-          &copy; {currentYear} AMS Boutique. All rights reserved. (This is a fictional boutique for demonstration purposes)
+        <div className="text-center text-xs space-y-1">
+          <p>&copy; {currentYear} AMS Boutique. All rights reserved. (This is a fictional boutique for demonstration purposes)</p>
+          <p>Developed by Abdelrahman Ahmed Moghazy Sheta</p>
         </div>
       </div>
     </footer>
