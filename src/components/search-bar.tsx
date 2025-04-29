@@ -15,14 +15,10 @@ export function SearchBar() {
     e?.preventDefault(); // Prevent form submission if used in a form
     const trimmedSearchTerm = searchTerm.trim();
     if (trimmedSearchTerm) {
-      // Navigate to a search results page (or filter the current page if needed)
-      // For now, let's assume a dedicated search results page /search?q=...
-      // In a real app, this might trigger filtering on the current page instead.
+      // Navigate to a search results page (e.g., /search?q=...)
       console.log(`Searching for: ${trimmedSearchTerm}`);
-      // Example navigation: router.push(`/search?q=${encodeURIComponent(trimmedSearchTerm)}`);
-      // For this demo, we'll just log it. Add navigation logic as needed.
-       router.push(`/search?q=${encodeURIComponent(trimmedSearchTerm)}`); // Example Navigation
-       setSearchTerm(''); // Clear search bar after search
+      router.push(`/search?q=${encodeURIComponent(trimmedSearchTerm)}`); // Navigate to search page
+      setSearchTerm(''); // Optional: Clear search bar after search
     }
   };
 
