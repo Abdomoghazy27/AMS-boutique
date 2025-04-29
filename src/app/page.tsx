@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getClothingItems, ClothingItem, GetClothingItemsFilters } from '@/services/clothing';
-// Removed AI flow import: import { recommendOutfit, RecommendOutfitInput, RecommendOutfitOutput } from '@/ai/flows/outfit-recommendation';
 import { ClothingList } from '@/components/clothing-list';
 import { FilterOptions } from '@/components/filter-options';
 import { OutfitRecommendations } from '@/components/outfit-recommendations';
@@ -153,8 +152,8 @@ export default function Home() {
            setRandomOutfitItems(selectedItems); // Set the selected items
 
            toast({
-               title: 'Random Outfit Suggestion Ready!',
-               description: 'Here are 3 randomly selected items.',
+               title: 'AI Suggestion Ready!', // Updated toast title
+               description: 'Here are 3 randomly selected items for inspiration.',
            });
 
       } catch (error) {
@@ -204,7 +203,7 @@ export default function Home() {
          </CardHeader>
          <CardContent className="pb-8 md:pb-12">
            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-             Explore our curated collection of modern fashion essentials. Get inspired with random outfit suggestions, discover trending styles, and shop our latest arrivals.
+             Explore our curated collection of modern fashion essentials. Get inspired with AI suggestions, discover trending styles, and shop our latest arrivals.
            </p>
             <div className="flex flex-wrap justify-center gap-4">
                  <Button asChild size="lg">
@@ -220,13 +219,13 @@ export default function Home() {
        </Card>
 
 
-        {/* Random Outfit Generation Button & Recommendations Section */}
+        {/* AI Outfit Suggestion Section */}
         <section>
             <Card className="mt-8 shadow-md bg-primary/5 border-primary/30">
                  <CardHeader>
                    <CardTitle className="text-xl font-semibold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-primary">
                       <div className='flex items-center gap-2'>
-                          <Shuffle className="h-6 w-6" /> Random Outfit Suggestion {/* Changed icon */}
+                          <Wand2 className="h-6 w-6" /> {/* Changed icon to Wand2 */} AI Suggestion
                       </div>
                        <Button
                           onClick={handleGenerateRandomOutfit} // Updated handler
@@ -239,12 +238,12 @@ export default function Home() {
                               </>
                           ) : (
                               <>
-                                <Shuffle className="mr-2 h-4 w-4" /> Get Random Outfit {/* Changed icon & text */}
+                                <Wand2 className="mr-2 h-4 w-4" /> Get AI Suggestion {/* Changed icon & text */}
                               </>
                           )}
                        </Button>
                    </CardTitle>
-                   <CardDescription>Click the button to get a random selection of 3 items from our collection for inspiration.</CardDescription>
+                   <CardDescription>Click the button to get an AI-generated selection of 3 items from our collection for inspiration.</CardDescription>
                  </CardHeader>
                  <CardContent>
                      {/* Pass the random outfit items to the component */}
@@ -323,3 +322,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -1,9 +1,7 @@
 
 import type { ClothingItem } from '@/services/clothing';
-// Removed AI Output type import: import type { RecommendOutfitOutput } from '@/ai/flows/outfit-recommendation';
 import { ClothingItemCard } from '@/components/clothing-item-card';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Info, Loader2, AlertCircle, Shuffle } from 'lucide-react'; // Added AlertCircle for errors, Shuffle for consistency
+import { Info, Loader2, AlertCircle, Wand2 } from 'lucide-react'; // Changed Shuffle to Wand2
 import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 
@@ -62,8 +60,8 @@ export function OutfitRecommendations({
 
           // Display a generic message for random generation failure or no items yet
           const reasonText = recommendedItems === null // Check if it was never generated vs. generated as empty
-            ? "No outfit suggestions available. Click 'Get Random Outfit'."
-            : "Could not generate a random outfit suggestion.";
+            ? "No AI suggestions available. Click 'Get AI Suggestion'." // Updated text
+            : "Could not generate an AI suggestion."; // Updated text
           const isError = recommendedItems !== null && recommendedItems.length === 0; // Consider empty array after generation an error state
 
           return (
@@ -84,7 +82,7 @@ export function OutfitRecommendations({
               {/* Optional: Add a simple title/reason for random suggestions */}
               <p className="text-sm italic text-primary mb-4 p-3 bg-primary/10 rounded-md border border-primary/20">
                   <Info className="h-4 w-4 inline-block mr-1.5 relative -top-px" />
-                  Here's a random selection of items for inspiration!
+                  Here's an AI-generated selection of items for inspiration! {/* Updated text */}
               </p>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                {recommendedItems.map((item) => (
@@ -106,9 +104,9 @@ export function OutfitRecommendations({
       console.log(`[OutfitRecommendations Render @ ${renderStartTime}] Initial placeholder: Not generated yet.`);
       return (
          <p className="text-center text-muted-foreground py-6 flex flex-col sm:flex-row items-center justify-center gap-2">
-             <Shuffle className="h-5 w-5 text-primary/60 flex-shrink-0"/>
+             <Wand2 className="h-5 w-5 text-primary/60 flex-shrink-0"/> {/* Changed icon */}
              <span>
-                 Click the 'Get Random Outfit' button above to get suggestions!
+                 Click the 'Get AI Suggestion' button above to get suggestions! {/* Updated text */}
              </span>
          </p>
       );
@@ -118,3 +116,4 @@ export function OutfitRecommendations({
   console.log(`[OutfitRecommendations Render @ ${renderStartTime}] Rendering main content area (loading/results/error).`);
   return renderRecommendations();
 }
+
