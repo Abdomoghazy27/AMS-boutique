@@ -1,6 +1,6 @@
 
 import Link from 'next/link'; // Import Link
-import { ShoppingBag, Tags, User } from 'lucide-react'; // Added Tags and User icons
+import { ShoppingBag, Tags, User, Settings } from 'lucide-react'; // Added Settings icon
 import { CartIcon } from './cart-icon'; // Import CartIcon
 import { Button } from './ui/button'; // Import Button for styling links
 
@@ -33,6 +33,12 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-2"> {/* Container for icons/actions */}
+           {/* Settings Icon */}
+           <Button variant="ghost" size="icon" asChild>
+             <Link href="/settings" aria-label="View Settings">
+                <Settings className="h-5 w-5" />
+             </Link>
+           </Button>
            {/* Profile Link/Icon */}
            <Button variant="ghost" size="icon" asChild>
              <Link href="/profile" aria-label="View Profile">
@@ -58,6 +64,12 @@ export function Header() {
               <Link href="/sale">
                 <Tags className="mr-1 h-4 w-4" /> Sale
               </Link>
+           </Button>
+           {/* Add Settings link for mobile */}
+           <Button variant="link" size="sm" asChild>
+             <Link href="/settings">
+               <Settings className="mr-1 h-4 w-4" /> Settings
+             </Link>
            </Button>
            {/* Add Profile link for mobile */}
             <Button variant="link" size="sm" asChild>
