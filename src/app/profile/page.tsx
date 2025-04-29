@@ -9,8 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { User, Settings, ShoppingBag, Mail, Edit, Save, XCircle } from 'lucide-react';
+import { User, Settings, ShoppingBag, Mail, Edit, Save, XCircle, History } from 'lucide-react'; // Added History icon
 import { useToast } from '@/hooks/use-toast';
+
+// Placeholder structure for what an order might look like
+interface Order {
+    id: string;
+    date: string; // Example: "2024-07-15"
+    total: number;
+    itemCount: number;
+    status: 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+}
 
 export default function ProfilePage() {
   // Placeholder user data - replace with actual data fetching when auth is implemented
@@ -20,10 +29,17 @@ export default function ProfilePage() {
     initials: 'AT',
     avatarUrl: 'https://picsum.photos/seed/alex/100/100',
     memberSince: 'January 2024', // Example data
-    orderCount: 3, // Example data
   };
 
+  // Placeholder order data - replace with actual fetching
+  const initialOrders: Order[] = [
+    { id: 'ORD123', date: '2024-07-10', total: 85.50, itemCount: 2, status: 'Delivered' },
+    { id: 'ORD456', date: '2024-06-25', total: 120.00, itemCount: 1, status: 'Delivered' },
+    { id: 'ORD789', date: '2024-05-15', total: 49.99, itemCount: 1, status: 'Cancelled' },
+  ];
+
   const [user, setUser] = useState(initialUser);
+  const [orders] = useState<Order[]>(initialOrders); // State for orders
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user.name);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -93,6 +109,15 @@ export default function ProfilePage() {
     });
   };
 
+  const getStatusColor = (status: Order['status']) => {
+    switch (status) {
+      case 'Delivered': return 'text-green-600';
+      case 'Shipped': return 'text-blue-600';
+      case 'Processing': return 'text-orange-600';
+      case 'Cancelled': return 'text-destructive';
+      default: return 'text-muted-foreground';
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-2xl">
@@ -184,16 +209,41 @@ export default function ProfilePage() {
 
           <Separator />
 
-          <section>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-primary">
-                 <ShoppingBag className="h-5 w-5" /> Order History
-              </h3>
-               <p className="text-sm text-muted-foreground mb-3">You have placed {user.orderCount} order(s).</p>
-               {/* Link to a dedicated order history page (if implemented) */}
-               <Button variant="outline" disabled>
-                  View Orders (Coming Soon)
-               </Button>
-          </section>
+          {/* Order History Section */}
+           <section>
+             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-primary">
+                <History className="h-5 w-5" /> Order History
+             </h3>
+             {orders.length === 0 ? (
+                 <p className="text-sm text-muted-foreground">You haven't placed any orders yet.</p>
+             ) : (
+                 <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">You have placed {orders.length} order(s).</p>
+                    {/* Displaying a summary of the last few orders */}
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2 border rounded-md p-3 bg-muted/30">
+                         {orders.map(order => (
+                           <div key={order.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm border-b pb-2 last:border-b-0">
+                              <div className="flex-grow mb-1 sm:mb-0">
+                                 <span className="font-medium text-foreground">Order #{order.id}</span>
+                                 <span className="text-muted-foreground"> ({order.date})</span>
+                                 <p className="text-xs text-muted-foreground">{order.itemCount} item(s)</p>
+                              </div>
+                              <div className="flex flex-col sm:items-end w-full sm:w-auto">
+                                <span className="font-semibold">${order.total.toFixed(2)}</span>
+                                <span className={`text-xs font-medium ${getStatusColor(order.status)}`}>{order.status}</span>
+                              </div>
+
+                           </div>
+                         ))}
+                    </div>
+                     {/* In a real app, this button would link to a dedicated page */}
+                    <Button variant="outline" disabled>
+                       View Full Order History (Coming Soon)
+                     </Button>
+                 </div>
+             )}
+           </section>
+
 
           <Separator />
 
