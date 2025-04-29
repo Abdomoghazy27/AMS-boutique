@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Flame, Sparkles, Tags } from 'lucide-react'; // Import icons
+import { Flame, Sparkles, Tags, Loader2 } from 'lucide-react'; // Import icons
 
 
 export default function Home() {
@@ -40,6 +40,7 @@ export default function Home() {
       setIsLoadingItems(true);
       setIsLoadingTrending(true);
       setIsLoadingNewArrivals(true);
+      setIsInitialLoad(true); // Ensure this is true at the start
       try {
         // Fetch all items first
         const allItems = await getClothingItems();
@@ -74,20 +75,20 @@ export default function Home() {
           setIsLoadingItems(false);
           setIsLoadingTrending(false);
           setIsLoadingNewArrivals(false);
-          setIsInitialLoad(false);
+          setIsInitialLoad(false); // Mark initial load as complete
       }
     };
     fetchAllData();
   }, [toast]);
 
-  // Filter main clothing list whenever filters or allClothingItems change
+  // Filter main clothing list whenever filters or allClothingItems change (but not during initial load)
   useEffect(() => {
     if (isInitialLoad) {
         console.log("[Page Effect - Filter] Skipping filter on initial load.");
         return;
     }
 
-    console.log("[Page Effect - Filter] Filters changed, starting filter process:", filters);
+    console.log("[Page Effect - Filter] Applying filters:", filters);
     setIsLoadingItems(true);
     const timer = setTimeout(async () => {
        try {
@@ -106,95 +107,116 @@ export default function Home() {
           console.log("[Page Effect - Filter] Filter process finished.");
           setIsLoadingItems(false);
        }
-    }, 300);
+    }, 300); // Debounce filter application slightly
 
     return () => {
         console.log("[Page Effect - Filter] Cleanup: Clearing filter timer.");
         clearTimeout(timer);
     }
 
-  }, [filters, allClothingItems, isInitialLoad, toast]);
+  }, [filters, allClothingItems, isInitialLoad, toast]); // Depend on filters and all items
 
 
  // Get outfit recommendations when recommendationInputItems change OR when allClothingItems are loaded (if inputItems exist)
  useEffect(() => {
-    console.log("[Page Effect - Recs] Triggered. Input items count:", recommendationInputItems.length, "All items loaded:", allClothingItems.length > 0);
+    const effectTriggerTime = Date.now();
+    console.log(`[Page Effect - Recs @ ${effectTriggerTime}] Triggered. Input items count:`, recommendationInputItems.length, "All items loaded:", allClothingItems.length > 0);
 
-    // Condition 1: No items selected for recommendations, clear state
+    // Condition 1: No items selected for recommendations. Clear state and stop loading.
     if (recommendationInputItems.length === 0) {
-        console.log("[Page Effect - Recs] No items selected for recommendations. Clearing existing state.");
-        if (recommendations !== null) setRecommendations(null); // Only clear if needed
-        if (isLoadingRecommendations) setIsLoadingRecommendations(false); // Stop loading if it was running
-        return;
+        console.log(`[Page Effect - Recs @ ${effectTriggerTime}] No items selected. Clearing recommendations and stopping loading.`);
+        if (recommendations !== null) setRecommendations(null);
+        if (isLoadingRecommendations) setIsLoadingRecommendations(false);
+        return; // Exit early
     }
 
     // Condition 2: Items are selected, but all clothing data isn't loaded yet. Wait.
     if (allClothingItems.length === 0) {
-        console.log("[Page Effect - Recs] Input items selected, but waiting for all clothing items to load...");
-        // Optionally set loading state here if desired, but might cause flickering
-        // setIsLoadingRecommendations(true);
-        return;
+        console.log(`[Page Effect - Recs @ ${effectTriggerTime}] Input items selected, but ALL clothing items not yet loaded. Waiting...`);
+        // Optionally set loading state here if needed, but might cause flickering if data loads quickly after
+        // setIsLoadingRecommendations(true); // Consider uncommenting if you want loading state while waiting for base data
+        return; // Exit early
     }
 
-    // Condition 3: Items selected AND all clothing data is loaded. Proceed to fetch recommendations.
+    // Condition 3: Items selected AND all clothing data is available. Proceed to fetch recommendations.
     const getRecommendations = async () => {
-        console.log("[Page Effect - Recs] Preparing to fetch recommendations...");
+        const fetchStartTime = Date.now();
+        console.log(`[Page Effect - Recs - Fetch @ ${fetchStartTime}] Conditions met. Preparing to fetch AI recommendations...`);
         setIsLoadingRecommendations(true);
-        setRecommendations(null); // Clear previous recommendations
+        // Don't clear previous recommendations immediately, maybe show stale ones while loading?
+        // setRecommendations(null); // Clearing here causes flicker if API is slow
 
         try {
             // Ensure we have the latest list of *all* available item IDs
             const allAvailableItemIds = allClothingItems.map(item => item.id);
             if (allAvailableItemIds.length === 0) {
-                console.error("[Page Effect - Recs] Error: All clothing items loaded, but IDs list is empty.");
-                throw new Error("No available item IDs found.");
+                console.error(`[Page Effect - Recs - Fetch @ ${fetchStartTime}] Error: All clothing items loaded, but IDs list is empty. Cannot proceed.`);
+                throw new Error("No available item IDs found to provide to AI.");
             }
-            console.log(`[Page Effect - Recs] Total available item IDs for AI: ${allAvailableItemIds.length}`);
+            console.log(`[Page Effect - Recs - Fetch @ ${fetchStartTime}] Total available item IDs for AI: ${allAvailableItemIds.length}`);
+
+             // Check if there are enough items to recommend FROM (available - selected > 0)
+             const potentialRecommendationCount = allAvailableItemIds.filter(id => !recommendationInputItems.includes(id)).length;
+             if (potentialRecommendationCount === 0) {
+                  console.warn(`[Page Effect - Recs - Fetch @ ${fetchStartTime}] No items available to recommend (all available items are already selected). Skipping AI call.`);
+                   setRecommendations({ recommendations: [] }); // Set empty result explicitly
+                   setIsLoadingRecommendations(false);
+                   return; // Don't call AI if nothing can be recommended
+             }
+
 
             const input: RecommendOutfitInput = {
                 selectedItems: recommendationInputItems, // The items the user explicitly selected
                 availableItemIds: allAvailableItemIds, // The *entire* catalog
-                // Add style preferences or previously viewed items if available
+                // Add style preferences or previously viewed items if available/implemented
+                // stylePreferences: "casual", // Example
+                // previouslyViewedItems: ["1", "5"] // Example
             };
 
-            console.log("[Page Effect - Recs] Calling recommendOutfit with input:", JSON.stringify(input, null, 2));
+            console.log(`[Page Effect - Recs - Fetch @ ${fetchStartTime}] Calling recommendOutfit AI flow with input:`, JSON.stringify(input, null, 2));
             const result = await recommendOutfit(input);
-            console.log("[Page Effect - Recs] Received recommendations result:", JSON.stringify(result, null, 2));
+            const fetchEndTime = Date.now();
+            console.log(`[Page Effect - Recs - Fetch @ ${fetchEndTime}] Received AI recommendations result (took ${fetchEndTime - fetchStartTime}ms):`, JSON.stringify(result, null, 2));
 
-             // Basic validation of the result structure before setting state
+             // Validate the result structure before setting state
             if (result && Array.isArray(result.recommendations)) {
+                console.log(`[Page Effect - Recs - Fetch @ ${fetchEndTime}] Setting recommendations state with ${result.recommendations.length} items.`);
                 setRecommendations(result);
              } else {
-                console.warn("[Page Effect - Recs] Received invalid recommendation structure from AI flow. Setting recommendations to empty.", result);
-                setRecommendations({ recommendations: [] }); // Set to empty array to avoid errors
+                console.warn(`[Page Effect - Recs - Fetch @ ${fetchEndTime}] Received invalid or null recommendation structure from AI flow. Setting recommendations to empty. Result:`, result);
+                setRecommendations({ recommendations: [] }); // Set to empty array to avoid UI errors
              }
 
-
         } catch (error) {
-            console.error("[Page Effect - Recs] Error getting recommendations:", error);
+            const errorTime = Date.now();
+            console.error(`[Page Effect - Recs - Fetch @ ${errorTime}] CRITICAL ERROR getting recommendations:`, error);
             toast({
                 title: 'Recommendation Error',
-                description: 'Could not fetch outfit recommendations. Please try again later.',
+                description: 'Could not fetch outfit suggestions. Please try again later.',
                 variant: 'destructive',
             });
-            setRecommendations(null); // Clear on error
+            setRecommendations({ recommendations: [] }); // Clear recommendations on error
         } finally {
-            console.log("[Page Effect - Recs] Finished fetching recommendations process.");
+            const finallyTime = Date.now();
+            console.log(`[Page Effect - Recs - Fetch @ ${finallyTime}] Finished recommendations fetch process. Setting isLoadingRecommendations to false.`);
             setIsLoadingRecommendations(false); // Stop loading regardless of outcome
         }
     };
 
     // Use debounce to avoid rapid API calls if user clicks items quickly
-    console.log("[Page Effect - Recs] Setting debounce timer (500ms)...");
+    console.log(`[Page Effect - Recs @ ${effectTriggerTime}] Setting debounce timer (500ms) before calling getRecommendations...`);
     const debounceTimer = setTimeout(getRecommendations, 500);
 
     // Cleanup function to clear the timer if dependencies change before it fires
     return () => {
-        console.log("[Page Effect - Recs] Cleanup: Clearing recommendation debounce timer.");
+        const cleanupTime = Date.now();
+        console.log(`[Page Effect - Recs @ ${cleanupTime}] Cleanup: Clearing recommendation debounce timer ID ${debounceTimer}.`);
         clearTimeout(debounceTimer);
+        // Optional: If the component unmounts while loading, stop the loading state
+        // setIsLoadingRecommendations(false); // May cause issues if another effect triggers immediately
     }
-    // Dependencies: trigger when selected items change OR when all items finish loading
-}, [recommendationInputItems, allClothingItems, toast]); // Add allClothingItems here
+    // Dependencies: Run when selected items change OR when all clothing items are loaded (to ensure `availableItemIds` is ready)
+}, [recommendationInputItems, allClothingItems, toast]); // `allClothingItems` is crucial here
 
 
   const handleFilterChange = useCallback((newFilters: GetClothingItemsFilters) => {
@@ -203,39 +225,59 @@ export default function Home() {
   }, []);
 
    const handleToggleOutfitRecs = useCallback((item: ClothingItem) => {
-     console.log(`[Page Handler - ToggleRecs] Toggling item: ${item.id} (${item.name})`);
+     const toggleTime = Date.now();
+     console.log(`[Page Handler - ToggleRecs @ ${toggleTime}] Toggling item ID: ${item.id} (${item.name})`);
      setRecommendationInputItems(prev => {
+       const isSelected = prev.includes(item.id);
        let newItems;
-       if (prev.includes(item.id)) {
+       if (isSelected) {
          newItems = prev.filter(id => id !== item.id);
-         console.log(`[Page Handler - ToggleRecs] Item ${item.id} removed. New input list:`, newItems);
+         console.log(`[Page Handler - ToggleRecs @ ${toggleTime}] Item ${item.id} REMOVED. New input list (${newItems.length} items):`, newItems);
          toast({
-            title: 'Stopped Considering Item',
-            description: `${item.name} removed from outfit recommendations consideration.`,
-            variant: 'default',
+            title: 'Removed from Consideration',
+            description: `${item.name} will no longer be used for generating the next AI recommendations.`,
+            variant: 'default', // Use default or secondary
           });
        } else {
+         // Optional: Limit the number of items that can be considered
+         const MAX_CONSIDERED_ITEMS = 5;
+          if (prev.length >= MAX_CONSIDERED_ITEMS) {
+              toast({
+                  title: 'Selection Limit Reached',
+                  description: `You can consider up to ${MAX_CONSIDERED_ITEMS} items at a time for recommendations.`,
+                  variant: 'destructive',
+               });
+              return prev; // Return previous state without adding
+          }
+
          newItems = [...prev, item.id];
-         console.log(`[Page Handler - ToggleRecs] Item ${item.id} added. New input list:`, newItems);
+         console.log(`[Page Handler - ToggleRecs @ ${toggleTime}] Item ${item.id} ADDED. New input list (${newItems.length} items):`, newItems);
           toast({
-             title: 'Considering Item',
-             description: `${item.name} added for outfit recommendations. AI suggestions will update shortly.`,
+             title: 'Added for Consideration',
+             description: `${item.name} added. AI suggestions will update shortly based on this selection.`,
            });
        }
+       // IMPORTANT: This state update triggers the useEffect for recommendations
        return newItems;
      });
    }, [toast]);
 
 
   const filterOptions = useMemo(() => {
+    // Prevent recalculation if allClothingItems is empty initially
+    if (!allClothingItems || allClothingItems.length === 0) {
+        console.log("[Page Memo - FilterOptions] allClothingItems is empty, returning empty options.");
+        return { categories: [], sizes: [], colors: [] };
+    }
     console.log("[Page Memo - FilterOptions] Recalculating filter options based on allClothingItems.");
     const categories = [...new Set(allClothingItems.map(item => item.category))].sort();
     const sizes = [...new Set(allClothingItems.flatMap(item => item.sizes))].sort();
     const colors = [...new Set(allClothingItems.flatMap(item => item.colors))].sort();
+    console.log("[Page Memo - FilterOptions] Calculated options:", { categories, sizes, colors });
     return { categories, sizes, colors };
   }, [allClothingItems]);
 
-  console.log("[Page Render] Rendering component. isLoadingItems:", isLoadingItems, "isLoadingRecommendations:", isLoadingRecommendations, "Input Items:", recommendationInputItems.length, "Recommendations:", recommendations?.recommendations?.length ?? 0);
+  console.log("[Page Render] Rendering Home component. States:", { isLoadingItems, isLoadingRecommendations, isLoadingTrending, isLoadingNewArrivals, isInitialLoad, inputItemsCount: recommendationInputItems.length, recommendationsCount: recommendations?.recommendations?.length ?? 0 });
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
@@ -274,7 +316,7 @@ export default function Home() {
              <TrendingProducts
                 items={trendingItems}
                 isLoading={isLoadingTrending}
-                onToggleForRecommendations={handleToggleOutfitRecs} // Pass handler if needed on these cards too
+                onToggleForRecommendations={handleToggleOutfitRecs} // Pass handler
                 recommendationInputItemIds={recommendationInputItems}
              />
         </section>
@@ -301,7 +343,7 @@ export default function Home() {
        {/* Main Collection Section */}
        <section id="explore-collection">
            <h2 className="text-3xl font-bold mb-6 text-center">Explore Our Collection</h2>
-            {isInitialLoad && !isLoadingItems ? ( // Show filters placeholder only during initial load
+            {(isLoadingItems && isInitialLoad) || (allClothingItems.length === 0 && isLoadingItems) ? ( // Show filter skeleton only during initial item load or if still loading and no items yet
                <div className="mb-6 space-y-4 animate-pulse">
                   <div className="h-16 bg-muted rounded-lg"></div> {/* Filter card header placeholder */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-muted rounded-lg">
@@ -312,7 +354,8 @@ export default function Home() {
                   </div>
                 </div>
             ) : (
-               !isInitialLoad && ( // Show filters *after* initial load completes
+               // Render filters only when *not* initial load AND filter options are ready
+               !isInitialLoad && filterOptions.categories.length > 0 && (
                  <FilterOptions
                     categories={filterOptions.categories}
                     sizes={filterOptions.sizes}
@@ -325,7 +368,8 @@ export default function Home() {
 
             <ClothingList
               items={filteredItems}
-              isLoading={isLoadingItems} // Use the correct loading state for the main list
+              // Show loading state if initial load is happening OR if filtering is in progress
+              isLoading={isInitialLoad || isLoadingItems}
               onToggleForRecommendations={handleToggleOutfitRecs}
               recommendationInputItemIds={recommendationInputItems}
              />
@@ -335,14 +379,30 @@ export default function Home() {
 
         {/* Outfit Recommendations Section */}
          <section>
-            {/* This component handles its own title/structure */}
+            {/* Only render OutfitRecommendations if base data is loaded, otherwise it might get empty data */}
+            {!isInitialLoad && allClothingItems.length > 0 ? (
               <OutfitRecommendations
                 recommendations={recommendations}
                 clothingData={allClothingItems} // Pass all items for lookup
                 isLoading={isLoadingRecommendations} // Pass the specific loading state for recs
-                onToggleForRecommendations={handleToggleOutfitRecs}
+                onToggleForRecommendations={handleToggleOutfitRecs} // Handler to toggle items *from* recs cards
                 recommendationInputItemIds={recommendationInputItems} // Pass the IDs being considered
               />
+            ) : (
+                // Optional: Placeholder while initial data loads
+                <Card className="mt-8 shadow-md bg-secondary/30 border-dashed animate-pulse">
+                     <CardHeader>
+                       <CardTitle className="text-xl font-semibold flex items-center gap-2 text-primary/80">
+                         <Loader2 className="h-5 w-5 animate-spin" /> Loading Recommendations...
+                       </CardTitle>
+                     </CardHeader>
+                     <CardContent>
+                       <p className="text-center text-muted-foreground py-6">
+                         Loading products before generating AI suggestions...
+                       </p>
+                     </CardContent>
+               </Card>
+            )}
          </section>
 
     </div>
